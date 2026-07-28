@@ -1,0 +1,28 @@
+{
+  "name": "formulaedi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Формула Еды — доставка еды до комнаты в общежитии МАДИ (formulaedi.ru)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,cyan \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/web",
+    "db:generate": "npm run db:generate -w apps/api",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api",
+    "db:studio": "npm run db:studio -w apps/api",
+    "pg:start": ".\\.localpg\\pgsql\\bin\\pg_ctl.exe -D .\\.localpg\\data -l .\\.localpg\\pg.log -o \"-p 5432\" start",
+    "pg:stop": ".\\.localpg\\pgsql\\bin\\pg_ctl.exe -D .\\.localpg\\data stop",
+    "pg:status": ".\\.localpg\\pgsql\\bin\\pg_ctl.exe -D .\\.localpg\\data status",
+    "typecheck": "npm run typecheck -w packages/shared && npm run typecheck -w apps/api && npm run typecheck -w apps/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

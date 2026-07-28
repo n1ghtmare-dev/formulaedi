@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Формула Еды — табло заказов · доставка до комнаты МАДИ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ БАЗА: КОСТЬ / ЧЕРНИЛА / СИГНАЛ ============ */
+:root{
+  --bone:#efece4;
+  --bone-2:#e7e2d4;   /* потемнее — hover строк */
+  --bone-3:#ddd7c6;
+  --ink:#14130f;
+  --ink-soft:#4a4638;
+  --signal:#e2502e;
+  --hair:#d8d3c4;
+  --mono:'JetBrains Mono',monospace;
+  --disp:'Geologica',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bone);
+  color:var(--ink);
+  font-family:var(--disp);
+  font-weight:300;
+  line-height:1.4;
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+  overflow-x:clip;
+}
+/* зерно бумаги — едва заметное */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:200;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:var(--mono)}
+section[id]{scroll-margin-top:96px}
+
+/* ============ 1. ТОП-ЛИНЕЙКА + БЕГУЩАЯ СТРОКА ============ */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:var(--bone);
+  border-bottom:1px solid var(--ink);
+}
+.topbar__row{
+  display:flex;align-items:center;gap:16px;
+  padding:10px 16px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+}
+.topbar__brand{font-family:var(--disp);font-weight:900;font-size:14px;letter-spacing:.04em;white-space:nowrap}
+.topbar__meta{display:none;color:var(--ink-soft);white-space:nowrap}
+.topbar__meta b{color:var(--ink);font-weight:700}
+.topnav{margin-left:auto;display:flex;gap:2px}
+.topnav a{
+  padding:5px 10px;border:1px solid transparent;
+  color:var(--ink-soft);transition:color .2s,border-color .2s;
+  white-space:nowrap;
+}
+.topnav a.active{color:var(--ink);border-color:var(--ink)}
+.topnav a:hover{color:var(--signal)}
+.topbar__cab{
+  display:none;margin-left:8px;padding:5px 12px;
+  border:1px solid var(--ink);background:var(--ink);color:var(--bone);
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+}
+.topbar__cab:hover{background:var(--signal);border-color:var(--signal)}
+
+/* бегущая строка */
+.ticker{
+  border-bottom:1px solid var(--hair);
+  overflow:hidden;background:var(--bone);
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 0;white-space:nowrap;
+}
+.ticker__track{display:inline-flex;animation:marquee 28s linear infinite;will-change:transform}
+.ticker__track span{padding:0 28px;color:var(--ink-soft)}
+.ticker__track span em{font-style:normal;color:var(--signal);font-weight:700}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ============ 2. HERO-ТАБЛО ============ */
+.board{border-bottom:1px solid var(--ink)}
+.board__head{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:14px 16px 0;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+}
+.board__rows{padding:8px 16px 20px}
+.brow{
+  display:grid;grid-template-columns:1fr;gap:0;
+  border-bottom:1px solid var(--hair);
+  padding:14px 0;
+  opacity:0;transform:translateY(22px);
+  animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards;
+}
+.brow:nth-child(1){animation-delay:.05s}
+.brow:nth-child(2){animation-delay:.2s}
+.brow:nth-child(3){animation-delay:.35s}
+.brow:last-child{border-bottom:none}
+@keyframes rise{to{opacity:1;transform:none}}
+.brow__label{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:2px;
+}
+.brow__value{
+  font-weight:900;text-transform:uppercase;
+  font-size:clamp(36px,9.5vw,120px);
+  line-height:.94;letter-spacing:-.02em;
+  overflow-wrap:anywhere;
+}
+.brow__value .arr{font-weight:100;padding:0 .06em}
+.brow__value .thin{font-weight:100}
+.brow__unit{
+  font-family:var(--mono);font-size:clamp(11px,1.4vw,15px);
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+  align-self:end;padding-bottom:.5em;
+}
+.brow__unit b{color:var(--signal);font-weight:700}
+.colon{display:inline-block;animation:blink 2s steps(1) infinite}
+@keyframes blink{0%,60%{opacity:1}61%,100%{opacity:.15}}
+.sig{color:var(--signal)}
+
+/* живые заказы — строки-рейсы */
+.live{border-top:1px solid var(--ink)}
+.live__caption{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;border-bottom:1px solid var(--hair);
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);
+}
+.live__caption .dot{width:7px;height:7px;border-radius:50%;background:var(--signal);animation:pulse 2s ease-out infinite}
+.order{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:4px 14px;align-items:center;
+  padding:12px 16px;border-bottom:1px solid var(--hair);
+  font-family:var(--mono);font-size:12px;letter-spacing:.04em;
+  opacity:0;transform:translateY(14px);
+  animation:rise .6s ease forwards;
+}
+.order:nth-child(2){animation-delay:.5s}
+.order:nth-child(3){animation-delay:.62s}
+.order:nth-child(4){animation-delay:.74s}
+.order:nth-child(5){animation-delay:.86s}
+.order:last-child{border-bottom:none}
+.order__num{font-weight:700;font-size:15px}
+.order__route{color:var(--ink-soft);text-transform:uppercase;font-size:11px}
+.order__status{
+  display:flex;align-items:center;gap:8px;justify-self:end;
+  text-transform:uppercase;font-size:11px;font-weight:700;letter-spacing:.1em;
+  perspective:300px;
+}
+.order__status .st{display:inline-block;transform-origin:50% 100%}
+.st--cook{color:var(--ink-soft)}
+.st--go{color:var(--signal)}
+.st--done{color:var(--ink)}
+.order__dot{width:7px;height:7px;border-radius:50%;flex:none}
+.order__dot--cook{background:var(--ink-soft);opacity:.5}
+.order__dot--go{background:var(--signal);animation:pulse 2s ease-out infinite}
+.order__dot--done{background:var(--ink)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(226,80,46,.5)}70%{box-shadow:0 0 0 9px rgba(226,80,46,0)}100%{box-shadow:0 0 0 0 rgba(226,80,46,0)}}
+.flipping{animation:flip .5s ease}
+@keyframes flip{0%{transform:rotateX(0);opacity:1}45%{transform:rotateX(88deg);opacity:0}55%{transform:rotateX(-88deg);opacity:0}100%{transform:rotateX(0);opacity:1}}
+
+/* ============ ОБЩИЙ КАРКАС СЕКЦИЙ ============ */
+.sec-head{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:26px 16px 14px;
+}
+.sec-head h2{
+  font-weight:900;text-transform:uppercase;letter-spacing:-.01em;
+  font-size:clamp(24px,4vw,44px);line-height:1;
+}
+.sec-head .idx{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ink-soft);text-transform:uppercase}
+
+/* ============ 3. КАТЕГОРИИ — BENTO ============ */
+.bento{
+  display:grid;gap:1px;background:var(--hair);
+  border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);
+  grid-template-columns:repeat(2,1fr);
+  grid-auto-rows:132px;
+}
+.tile{
+  background:var(--bone);position:relative;overflow:hidden;
+  padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;
+  opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease,background .25s;
+}
+.tile.visible{opacity:1;transform:none}
+.tile:hover{background:var(--bone-2)}
+.tile__no{
+  font-weight:100;line-height:.85;letter-spacing:-.04em;
+  font-size:clamp(56px,14vw,120px);
+  color:var(--ink);
+}
+.tile__meta{display:flex;justify-content:space-between;align-items:end;gap:8px;position:relative;z-index:2}
+.tile__name{font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.02em;line-height:1.15}
+.tile__count{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink-soft);white-space:nowrap}
+.tile--photo .tile__no,.tile--photo .tile__name{color:var(--bone)}
+.tile--photo .tile__count{color:var(--bone-3)}
+/* дуотон: кость + чернила */
+.tile__img{position:absolute;inset:0;z-index:0;background:var(--ink)}
+.tile__img img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.12) brightness(.92)}
+.tile__img::before{content:'';position:absolute;inset:0;background:var(--ink);mix-blend-mode:lighten}
+.tile__img::after{content:'';position:absolute;inset:0;background:var(--bone);mix-blend-mode:darken;opacity:.92}
+.tile--photo{color:var(--bone)}
+.tile--photo>*:not(.tile__img){position:relative;z-index:2}
+.tile--photo .tile__img::before{opacity:.55}
+.tile--photo::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(20,19,15,.15),rgba(20,19,15,.62))}
+.tile--big{grid-column:span 2;grid-row:span 2}
+.tile--tall{grid-row:span 2}
+
+/* ============ 4. МЕНЮ-РАСПИСАНИЕ + 5. ЧЕК ============ */
+.menuwrap{padding-bottom:120px}
+.menu-cols{display:block}
+.mtable{border-top:1px solid var(--ink)}
+.mrow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 62px 70px 44px;
+  gap:10px;align-items:center;
+  padding:13px 16px;border-bottom:1px solid var(--hair);
+  transition:background .18s;
+  opacity:0;transform:translateY(16px);
+}
+.mrow.visible{opacity:1;transform:none;transition:background .18s,opacity .6s ease,transform .6s ease}
+.mrow:hover{background:var(--bone-2)}
+.mrow__cat{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:2px}
+.mrow__name{font-weight:600;font-size:15px;line-height:1.2}
+.mrow__g,.mrow__p{font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap}
+.mrow__g{color:var(--ink-soft)}
+.mrow__p{font-weight:700;font-size:13px}
+.mrow__add{
+  width:34px;height:34px;justify-self:end;
+  border:1px solid var(--ink);background:transparent;color:var(--ink);
+  font-family:var(--mono);font-size:16px;font-weight:700;line-height:1;
+  transition:background .15s,color .15s,border-color .15s,transform .1s;
+}
+.mrow__add:hover{background:var(--signal);border-color:var(--signal);color:var(--bone)}
+.mrow__add:active{transform:scale(.9)}
+.mtable-head{
+  display:grid;grid-template-columns:minmax(0,1fr) 62px 70px 44px;gap:10px;
+  padding:8px 16px;border-bottom:1px solid var(--ink);
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);
+}
+.mtable-head span:nth-child(2),.mtable-head span:nth-child(3){text-align:right}
+
+/* ЧЕК — посадочный талон */
+.check{
+  position:fixed;left:0;right:0;bottom:0;z-index:90;
+  background:var(--ink);color:var(--bone);
+  border-top:2px solid var(--signal);
+}
+.check__body{display:none}
+.check__strip{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;
+  font-family:var(--mono);
+}
+.check__strip-total{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-3)}
+.check__strip-total b{display:block;font-size:20px;color:var(--bone);font-weight:700;letter-spacing:0}
+.check__strip-bonus{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-3);line-height:1.5}
+.check__strip-bonus b{color:var(--signal)}
+.check__cta{
+  margin-left:auto;
+  background:var(--signal);color:var(--bone);border:none;
+  font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  padding:14px 18px;white-space:nowrap;
+  transition:background .2s,transform .1s;
+}
+.check__cta:hover{background:#c8401f}
+.check__cta:active{transform:scale(.97)}
+/* перфорация */
+.perf{
+  height:14px;flex:none;
+  background-image:radial-gradient(circle at 7px 7px,var(--bone) 4px,transparent 4.5px);
+  background-size:22px 14px;background-repeat:repeat-x;background-position:center;
+}
+.check__title{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:14px 18px 8px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--bone-3);
+}
+.check__title b{color:var(--bone);font-weight:700}
+.check__items{padding:4px 18px;font-family:var(--mono);font-size:12px}
+.citem{
+  display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;
+  padding:8px 0;border-bottom:1px dashed rgba(239,236,228,.2);
+}
+.citem__name{line-height:1.3}
+.citem__qty{display:flex;align-items:center;gap:7px;color:var(--bone-3)}
+.citem__qty button{
+  width:20px;height:20px;border:1px solid rgba(239,236,228,.35);background:transparent;color:var(--bone);
+  font-family:var(--mono);font-size:12px;line-height:1;
+  transition:border-color .15s,color .15s;
+}
+.citem__qty button:hover{border-color:var(--signal);color:var(--signal)}
+.citem__sum{font-weight:700;text-align:right;min-width:64px}
+.check__opts{padding:6px 18px;font-family:var(--mono);font-size:11px}
+.check__opts details{border-bottom:1px dashed rgba(239,236,228,.2);padding:7px 0}
+.check__opts summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;color:var(--bone-3);text-transform:uppercase;letter-spacing:.08em}
+.check__opts summary::after{content:'\25BE';color:var(--bone-3)}
+.check__opts details[open] summary::after{transform:rotate(180deg)}
+.check__opts .opt-body{padding-top:8px;color:var(--bone-3);line-height:1.7}
+.check__opts .opt-body b{color:var(--signal)}
+.check__total{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:14px 18px 4px;font-family:var(--mono);
+}
+.check__total .lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--bone-3)}
+.check__total .sum{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.check__bonus{
+  padding:0 18px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-3);
+}
+.check__bonus b{color:var(--signal)}
+.check__addr{
+  margin:0 18px 12px;padding:10px 12px;border:1px dashed rgba(239,236,228,.3);
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-3);line-height:1.8;
+}
+.check__addr b{color:var(--bone)}
+.check__cta--big{width:calc(100% - 36px);margin:0 18px 16px;padding:16px}
+
+/* ============ ФУТЕР ============ */
+.footer{
+  border-top:1px solid var(--ink);
+  padding:26px 16px 40px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-soft);line-height:2.1;
+}
+.footer b{color:var(--ink);font-weight:700}
+.footer .warn{color:var(--signal);font-weight:700}
+.footer__grid{display:grid;gap:18px}
+
+/* ============ БРЕЙКПОИНТЫ ============ */
+@media(min-width:768px){
+  .topbar__row{padding:12px 28px}
+  .topbar__meta{display:block}
+  .topbar__cab{display:block}
+  .board__head,.board__rows,.live__caption,.order,.sec-head,.mtable-head,.mrow{padding-left:28px;padding-right:28px}
+  .brow{grid-template-columns:180px 1fr auto;align-items:end;gap:0 24px;padding:18px 0}
+  .brow__label{margin-bottom:0;align-self:end;padding-bottom:1.1em}
+  .order{grid-template-columns:90px 1fr 220px;font-size:13px}
+  .bento{grid-template-columns:repeat(4,1fr);grid-auto-rows:150px}
+  .mrow{grid-template-columns:minmax(0,1fr) 90px 90px 52px}
+  .mtable-head{grid-template-columns:minmax(0,1fr) 90px 90px 52px}
+  .footer{padding:34px 28px 60px}
+  .footer__grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(min-width:1024px){
+  .menuwrap{padding-bottom:0}
+  .menu-cols{display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:start}
+  .check{
+    position:sticky;top:96px;bottom:auto;left:auto;right:auto;
+    border-top:none;border-left:1px solid var(--ink);
+    margin:0;
+  }
+  .check__strip{display:none}
+  .check__body{display:block}
+}
+@media(min-width:1440px){
+  .topbar__row{padding:12px 48px}
+  .board__head,.board__rows,.live__caption,.order,.sec-head,.mtable-head,.mrow{padding-left:48px;padding-right:48px}
+  .brow{grid-template-columns:220px 1fr auto}
+  .bento{grid-auto-rows:170px}
+  .mrow__name{font-size:16px}
+  .footer{padding-left:48px;padding-right:48px}
+}
+
+/* ============ REDUCED MOTION ============ */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .brow,.order,.tile,.mrow{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 1. ТОП + БЕГУЩАЯ СТРОКА ============ -->
+<header class="topbar">
+  <div class="topbar__row">
+    <span class="topbar__brand">ФОРМУЛА ЕДЫ</span>
+    <span class="topbar__meta">МАДИ &middot; КОЧНОВСКИЙ ПР., 7К1 &middot; <b>09:00&ndash;23:00</b></span>
+    <nav class="topnav" id="topnav">
+      <a href="#tablo" class="active">Табло</a>
+      <a href="#categorii">Категории</a>
+      <a href="#menu">Меню</a>
+      <a href="#chek">Чек</a>
+    </nav>
+    <button class="topbar__cab" type="button">Кабинет</button>
+  </div>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker__track" id="ticker">
+      <span>формулы сгорают <em>1-го числа</em> каждого месяца</span>
+      <span>сегодня суп дня <em>149 &#8381;</em></span>
+      <span>доставка до комнаты <em>за 30 минут</em> или быстрее</span>
+      <span>кэшбэк <em>+7%</em> формулами начислится завтра</span>
+      <span>оплата формулами до <em>25%</em> заказа</span>
+      <span>самовывоз из кафе &middot; кочновский проезд, 7к1, этаж 1</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 2. HERO-ТАБЛО ============ -->
+<section class="board" id="tablo">
+  <div class="board__head">
+    <span>ТАБЛО &middot; ОБЩЕЖИТИЕ МАДИ &middot; КОРПУСА 1&ndash;2</span>
+    <span class="mono" id="clock">--:--</span>
+  </div>
+  <div class="board__rows">
+    <div class="brow">
+      <div class="brow__label">Направление</div>
+      <div class="brow__value">Доставка <span class="arr">&rarr;</span> комната</div>
+      <div class="brow__unit">кафе &middot; этаж 1 <b>&rarr;</b> твоя дверь</div>
+    </div>
+    <div class="brow">
+      <div class="brow__label">Время в пути</div>
+      <div class="brow__value"><span data-count="30" data-pad="2">00</span><span class="colon">:</span>00</div>
+      <div class="brow__unit">минут <b>или быстрее</b></div>
+    </div>
+    <div class="brow">
+      <div class="brow__label">Кэшбэк</div>
+      <div class="brow__value"><span class="sig">+<span data-count="7">0</span>%</span> <span class="thin">формул</span></div>
+      <div class="brow__unit">начислятся <b>завтра</b> &middot; спишешь до 25%</div>
+    </div>
+  </div>
+
+  <!-- живые заказы -->
+  <div class="live">
+    <div class="live__caption">
+      <span class="dot"></span>
+      <span>Заказы прямо сейчас</span>
+    </div>
+    <div class="order">
+      <span class="order__num">&#8470;0847</span>
+      <span class="order__route">корпус 2 &middot; эт 5 &middot; комн 512</span>
+      <span class="order__status" data-cycle>
+        <span class="order__dot order__dot--go"></span>
+        <span class="st st--go">В ПУТИ</span>
+      </span>
+    </div>
+    <div class="order">
+      <span class="order__num">&#8470;0846</span>
+      <span class="order__route">корпус 1 &middot; эт 9 &middot; комн 903</span>
+      <span class="order__status">
+        <span class="order__dot order__dot--cook"></span>
+        <span class="st st--cook">ГОТОВИТСЯ</span>
+      </span>
+    </div>
+    <div class="order">
+      <span class="order__num">&#8470;0845</span>
+      <span class="order__route">самовывоз &middot; кафе &middot; этаж 1</span>
+      <span class="order__status">
+        <span class="order__dot order__dot--go"></span>
+        <span class="st st--go">МОЖНО ЗАБИРАТЬ</span>
+      </span>
+    </div>
+    <div class="order">
+      <span class="order__num">&#8470;0844</span>
+      <span class="order__route">корпус 2 &middot; эт 3 &middot; комн 318</span>
+      <span class="order__status">
+        <span class="order__dot order__dot--done"></span>
+        <span class="st st--done">ДОСТАВЛЕН &middot; 22 МИН</span>
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. КАТЕГОРИИ — BENTO ============ -->
+<section id="categorii">
+  <div class="sec-head">
+    <h2>Категории</h2>
+    <span class="idx">09 направлений &middot; выбирай</span>
+  </div>
+  <div class="bento">
+    <a href="#menu" class="tile tile--big tile--photo">
+      <div class="tile__img"><img src="./assets/burger.jpg" alt="Бургер с картошкой фри"></div>
+      <div class="tile__no">01</div>
+      <div class="tile__meta">
+        <span class="tile__name">Стрит-фуд</span>
+        <span class="tile__count">14 позиций</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile">
+      <div class="tile__no">02</div>
+      <div class="tile__meta">
+        <span class="tile__name">Сэндвичи</span>
+        <span class="tile__count">6 позиций</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile tile--tall tile--photo">
+      <div class="tile__img"><img src="./assets/pizza.jpg" alt="Пицца пепперони"></div>
+      <div class="tile__no">03</div>
+      <div class="tile__meta">
+        <span class="tile__name">Пицца-мини &middot; хот-доги &middot; выпечка</span>
+        <span class="tile__count">11 позиций</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile">
+      <div class="tile__no">04</div>
+      <div class="tile__meta">
+        <span class="tile__name">Вторые блюда с гарниром</span>
+        <span class="tile__count">9 позиций</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile">
+      <div class="tile__no">05</div>
+      <div class="tile__meta">
+        <span class="tile__name">Супы</span>
+        <span class="tile__count">4 позиции</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile">
+      <div class="tile__no">06</div>
+      <div class="tile__meta">
+        <span class="tile__name">Салаты</span>
+        <span class="tile__count">5 позиций</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile">
+      <div class="tile__no">07</div>
+      <div class="tile__meta">
+        <span class="tile__name">Халяль</span>
+        <span class="tile__count">7 позиций</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile">
+      <div class="tile__no">08</div>
+      <div class="tile__meta">
+        <span class="tile__name">Десерты &middot; кукис</span>
+        <span class="tile__count">8 позиций</span>
+      </div>
+    </a>
+    <a href="#menu" class="tile tile--photo">
+      <div class="tile__img"><img src="./assets/coffee.jpg" alt="Капучино"></div>
+      <div class="tile__no">09</div>
+      <div class="tile__meta">
+        <span class="tile__name">Напитки</span>
+        <span class="tile__count">12 позиций</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- ============ 4. МЕНЮ + 5. ЧЕК ============ -->
+<section id="menu" class="menuwrap">
+  <div class="sec-head">
+    <h2>Меню сегодня</h2>
+    <span class="idx">хиты дня &middot; обновлено 09:00</span>
+  </div>
+  <div class="menu-cols">
+    <div>
+      <div class="mtable-head">
+        <span>Позиция</span><span>Выход</span><span>Цена</span><span></span>
+      </div>
+      <div class="mtable" id="mtable">
+        <div class="mrow" data-id="shawarma">
+          <div><span class="mrow__cat">01 &middot; стрит-фуд</span><span class="mrow__name">Шаурма классик</span></div>
+          <span class="mrow__g">350 г</span>
+          <span class="mrow__p">269 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Шаурма классик">+</button>
+        </div>
+        <div class="mrow" data-id="burger">
+          <div><span class="mrow__cat">01 &middot; стрит-фуд</span><span class="mrow__name">Бургер &laquo;Формула&raquo;</span></div>
+          <span class="mrow__g">320 г</span>
+          <span class="mrow__p">249 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Бургер Формула">+</button>
+        </div>
+        <div class="mrow" data-id="bagel">
+          <div><span class="mrow__cat">01 &middot; стрит-фуд</span><span class="mrow__name">Бейгл с лососем</span></div>
+          <span class="mrow__g">280 г</span>
+          <span class="mrow__p">319 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Бейгл с лососем">+</button>
+        </div>
+        <div class="mrow" data-id="pizza">
+          <div><span class="mrow__cat">03 &middot; пицца-мини</span><span class="mrow__name">Пицца-мини пепперони</span></div>
+          <span class="mrow__g">220 г</span>
+          <span class="mrow__p">199 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Пицца-мини пепперони">+</button>
+        </div>
+        <div class="mrow" data-id="soup">
+          <div><span class="mrow__cat">05 &middot; супы</span><span class="mrow__name">Суп дня</span></div>
+          <span class="mrow__g">300 мл</span>
+          <span class="mrow__p">149 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Суп дня">+</button>
+        </div>
+        <div class="mrow" data-id="caesar">
+          <div><span class="mrow__cat">06 &middot; салаты</span><span class="mrow__name">Цезарь</span></div>
+          <span class="mrow__g">250 г</span>
+          <span class="mrow__p">229 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Цезарь">+</button>
+        </div>
+        <div class="mrow" data-id="cookie">
+          <div><span class="mrow__cat">08 &middot; десерты</span><span class="mrow__name">Кукис двойной шоколад</span></div>
+          <span class="mrow__g">90 г</span>
+          <span class="mrow__p">89 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Кукис двойной шоколад">+</button>
+        </div>
+        <div class="mrow" data-id="cappuccino">
+          <div><span class="mrow__cat">09 &middot; напитки</span><span class="mrow__name">Капучино</span></div>
+          <span class="mrow__g">300 мл</span>
+          <span class="mrow__p">139 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Капучино">+</button>
+        </div>
+        <div class="mrow" data-id="mors">
+          <div><span class="mrow__cat">09 &middot; напитки</span><span class="mrow__name">Морс облепиховый</span></div>
+          <span class="mrow__g">400 мл</span>
+          <span class="mrow__p">119 &#8381;</span>
+          <button class="mrow__add" type="button" aria-label="Добавить Морс облепиховый">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ЧЕК: посадочный талон -->
+    <aside class="check" id="chek" aria-label="Ваш заказ">
+      <div class="check__body">
+        <div class="perf" aria-hidden="true"></div>
+        <div class="check__title"><b>Посадочный талон</b><span>заказ &#8470;0848</span></div>
+        <div class="check__items" id="citems"></div>
+        <div class="check__opts">
+          <details>
+            <summary>Приборы</summary>
+            <div class="opt-body">1 комплект &middot; бесплатно &middot; изменить в оформлении</div>
+          </details>
+          <details>
+            <summary>Списать формулы</summary>
+            <div class="opt-body">на счету <b>128 формул</b> &middot; можно оплатить до 25% заказа &middot; войди по номеру телефона</div>
+          </details>
+        </div>
+        <div class="check__total"><span class="lbl">Итог</span><span class="sum"><span id="ctotal">0</span> &#8381;</span></div>
+        <div class="check__bonus">завтра начислится <b><span id="cbonus">0</span> формул</b></div>
+        <div class="check__addr">Куда: <b>корпус 2 &middot; этаж 5 &middot; комн ___</b><br>или самовывоз: кафе, этаж 1</div>
+        <button class="check__cta check__cta--big" type="button" id="ctaBig">Оплатить 0 &#8381; и оформить</button>
+        <div class="perf" aria-hidden="true"></div>
+      </div>
+      <!-- мобильная полоса -->
+      <div class="check__strip">
+        <div class="check__strip-total">Итог<b><span id="ctotalM">0</span> &#8381;</b></div>
+        <div class="check__strip-bonus">завтра<br><b>+<span id="cbonusM">0</span> формул</b></div>
+        <button class="check__cta" type="button" id="ctaSmall">Оплатить и оформить</button>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ ФУТЕР ============ -->
+<footer class="footer">
+  <div class="footer__grid">
+    <div>
+      <b>Формула Еды</b><br>
+      Кочновский проезд, 7к1, этаж 1<br>
+      ежедневно 09:00&ndash;23:00
+    </div>
+    <div>
+      доставка до комнаты &middot; корпуса 1 и 2<br>
+      30 минут или быстрее<br>
+      вход по телефону + SMS
+    </div>
+    <div>
+      кэшбэк +7% формулами &middot; списание до 25%<br>
+      <span class="warn">формулы сгорают 1-го числа месяца</span><br>
+      прототип E &middot; табло заказов
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ---- бегущая строка: дублируем контент для бесшовности ---- */
+  var ticker = document.getElementById('ticker');
+  ticker.innerHTML += ticker.innerHTML;
+
+  /* ---- часы в шапке табло ---- */
+  function clock(){
+    var d = new Date();
+    document.getElementById('clock').textContent =
+      String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ' МСК';
+  }
+  clock(); setInterval(clock, 30000);
+
+  /* ---- count-up гигантских цифр ---- */
+  document.querySelectorAll('[data-count]').forEach(function(el){
+    var to = +el.dataset.count, pad = +(el.dataset.pad || 0);
+    function fmt(n){ return pad ? String(n).padStart(pad,'0') : String(n); }
+    if(reduce){ el.textContent = fmt(to); return; }
+    var t0 = null;
+    requestAnimationFrame(function step(ts){
+      t0 = t0 || ts;
+      var p = Math.min((ts - t0)/1100, 1);
+      el.textContent = fmt(Math.round(to * (1 - Math.pow(1-p,3))));
+      if(p < 1) requestAnimationFrame(step);
+    });
+  });
+
+  /* ---- живой заказ: смена статуса каждые 4с ---- */
+  var states = [
+    {txt:'ГОТОВИТСЯ', st:'st--cook', dot:'order__dot--cook'},
+    {txt:'В ПУТИ',    st:'st--go',   dot:'order__dot--go'},
+    {txt:'ДОСТАВЛЕН', st:'st--done', dot:'order__dot--done'}
+  ];
+  var cyc = document.querySelector('[data-cycle]');
+  if(cyc && !reduce){
+    var i = 1; /* начинаем с «В ПУТИ» */
+    setInterval(function(){
+      i = (i + 1) % states.length;
+      var s = states[i];
+      var stEl = cyc.querySelector('.st'), dotEl = cyc.querySelector('.order__dot');
+      stEl.classList.add('flipping');
+      setTimeout(function(){
+        stEl.textContent = s.txt;
+        stEl.className = 'st ' + s.st + ' flipping';
+        dotEl.className = 'order__dot ' + s.dot;
+      }, 250);
+      setTimeout(function(){ stEl.classList.remove('flipping'); }, 520);
+    }, 4000);
+  }
+
+  /* ---- staggered reveal: плитки и строки меню ---- */
+  var revealEls = document.querySelectorAll('.tile, .mrow');
+  if(!('IntersectionObserver' in window) || reduce){
+    revealEls.forEach(function(e){ e.classList.add('visible'); });
+  } else {
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        if(en.isIntersecting){
+          var el = en.target;
+          var sibs = Array.prototype.slice.call(el.parentNode.children).filter(function(c){
+            return c.classList && (c.classList.contains('tile') || c.classList.contains('mrow'));
+          });
+          el.style.transitionDelay = (sibs.indexOf(el) % 9) * 60 + 'ms';
+          el.classList.add('visible');
+          io.unobserve(el);
+        }
+      });
+    }, {threshold:.12});
+    revealEls.forEach(function(e){ io.observe(e); });
+  }
+
+  /* ---- scroll-spy навигация ---- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('#topnav a'));
+  var spy = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.toggle('active', l.hash === '#' + e.target.id); });
+      }
+    });
+  }, {rootMargin:'-30% 0px -60% 0px'});
+  document.querySelectorAll('section[id]').forEach(function(s){ spy.observe(s); });
+
+  /* ---- живой чек ---- */
+  var CATALOG = {
+    shawarma:  {name:'Шаурма классик',        price:269},
+    burger:    {name:'Бургер «Формула»',       price:249},
+    bagel:     {name:'Бейгл с лососем',        price:319},
+    pizza:     {name:'Пицца-мини пепперони',   price:199},
+    soup:      {name:'Суп дня',                price:149},
+    caesar:    {name:'Цезарь',                 price:229},
+    cookie:    {name:'Кукис двойной шоколад',  price:89},
+    cappuccino:{name:'Капучино',               price:139},
+    mors:      {name:'Морс облепиховый',       price:119}
+  };
+  /* предзаполнено: 269 + 229 + 149 = 647 ₽ → 45 формул */
+  var cart = {shawarma:1, caesar:1, soup:1};
+  var rub = ' ₽';
+
+  function render(){
+    var box = document.getElementById('citems');
+    var html = '', total = 0;
+    Object.keys(cart).forEach(function(id){
+      var q = cart[id], it = CATALOG[id];
+      if(q <= 0) return;
+      total += it.price * q;
+      html += '<div class="citem">' +
+        '<span class="citem__name">' + it.name + '</span>' +
+        '<span class="citem__qty">' +
+          '<button type="button" data-dec="' + id + '" aria-label="Убрать">&minus;</button>' +
+          '<span>' + q + '</span>' +
+          '<button type="button" data-inc="' + id + '" aria-label="Добавить">+</button>' +
+        '</span>' +
+        '<span class="citem__sum">' + (it.price * q) + rub + '</span>' +
+      '</div>';
+    });
+    if(!html) html = '<div class="citem"><span class="citem__name" style="color:rgba(239,236,228,.5)">чек пуст — жми «+» в меню</span></div>';
+    box.innerHTML = html;
+    var bonus = Math.floor(total * 0.07);
+    document.getElementById('ctotal').textContent = total;
+    document.getElementById('cbonus').textContent = bonus;
+    document.getElementById('ctotalM').textContent = total;
+    document.getElementById('cbonusM').textContent = bonus;
+    document.getElementById('ctaBig').textContent = 'Оплатить ' + total + ' ₽ и оформить заказ';
+    document.getElementById('ctaSmall').textContent = 'Оплатить ' + total + ' ₽';
+  }
+  render();
+
+  document.getElementById('mtable').addEventListener('click', function(e){
+    var btn = e.target.closest('.mrow__add');
+    if(!btn) return;
+    var id = btn.closest('.mrow').dataset.id;
+    cart[id] = (cart[id] || 0) + 1;
+    render();
+    if(!reduce){
+      btn.style.background = 'var(--signal)';
+      btn.style.borderColor = 'var(--signal)';
+      btn.style.color = 'var(--bone)';
+      setTimeout(function(){ btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = ''; }, 350);
+    }
+  });
+  document.getElementById('citems').addEventListener('click', function(e){
+    var inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]');
+    if(inc){ cart[inc.dataset.inc]++; render(); }
+    if(dec){ cart[dec.dataset.dec]--; if(cart[dec.dataset.dec] <= 0) delete cart[dec.dataset.dec]; render(); }
+  });
+})();
+</script>
+</body>
+</html>

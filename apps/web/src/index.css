@@ -1,0 +1,118 @@
+@import 'tailwindcss';
+
+/* ─── Фирменная тема «Формула Еды» (из design-system.html) ─── */
+@theme {
+  --color-cream: #fbfaf5;
+  --color-paper: #ffffff;
+  --color-ink: #2c3118;
+  --color-ink-soft: #6c7159;
+  --color-line: #e9e7d8;
+
+  --color-olive-900: #3f4a1f;
+  --color-olive-800: #4f5c28;
+  --color-olive-700: #5a682d;
+  --color-olive-600: #677636;
+
+  --color-brand-500: #8f9f3f;
+  --color-brand-400: #96a55a;
+  --color-brand-300: #b7c489;
+  --color-brand-100: #e7ecd4;
+  --color-brand-50: #f2f5e8;
+
+  --color-wood-600: #b98f66;
+  --color-wood-500: #d5b494;
+  --color-wood-100: #f6eee3;
+
+  --color-danger: #c0492f;
+  --color-danger-bg: #fbeee9;
+
+  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Lora', Georgia, 'Times New Roman', serif;
+
+  --radius-card: 20px;
+  --radius-xl2: 28px;
+
+  --shadow-soft: 0 10px 30px -14px rgba(90, 104, 45, 0.35);
+  --shadow-lift: 0 22px 50px -20px rgba(90, 104, 45, 0.45);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    color: var(--color-olive-800);
+    line-height: 1.12;
+  }
+  /* смещение якорей под липкую навигацию категорий */
+  [data-section] {
+    scroll-margin-top: 148px;
+  }
+}
+
+@layer utilities {
+  /* Появление секций/карточек при скролле */
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+  .reveal.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Скрыть скроллбар у ленты категорий */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Мерцание-плейсхолдер под фото */
+  .shimmer {
+    background: linear-gradient(
+      100deg,
+      var(--color-brand-50) 30%,
+      #eef1e2 50%,
+      var(--color-brand-50) 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+  }
+  @keyframes shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-10px) rotate(-1deg); }
+  }
+  .floaty { animation: floaty 6s ease-in-out infinite; }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  .pop { animation: pop 0.32s ease; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .floaty, .shimmer { animation: none; }
+}

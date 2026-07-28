@@ -1,0 +1,274 @@
+// ─────────────────────────────────────────────────────────────
+//  Формула Еды — схема базы данных (PostgreSQL)
+//  Деньги хранятся в КОПЕЙКАХ (Int), чтобы избежать ошибок float.
+//  «Формулы» — бонусная валюта, целое число, 1 формула = 1 ₽.
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────── Пользователи и авторизация ───────────────
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id             String   @id @default(cuid())
+  phone          String   @unique // формат +7XXXXXXXXXX
+  fullName       String? // ФИО, заполняется при регистрации
+  role           UserRole @default(CUSTOMER)
+  formulaBalance Int      @default(0) // денормализованный баланс формул (источник правды — ledger)
+  isBlocked      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orders             Order[]
+  formulaTransactions FormulaTransaction[]
+  refreshTokens      RefreshToken[]
+  savedAddresses     SavedAddress[]
+
+  @@map("users")
+}
+
+// Одноразовые коды подтверждения телефона (SMS).
+model VerificationCode {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String // храним хэш кода, не сам код
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@map("verification_codes")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// Сохранённые адреса доставки пользователя (корпус/этаж/комната).
+model SavedAddress {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  building Building
+  floor    String
+  room     String
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("saved_addresses")
+}
+
+// ─────────────── Меню ───────────────
+
+model MenuCategory {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  iconEmoji String? // иконка категории (эмодзи или ключ иконки)
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  categoryId   String
+  category     MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  priceKopecks Int // цена в копейках
+  imageUrl     String?
+  isHalal      Boolean  @default(false)
+  isAvailable  Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+// ─────────────── Заказы ───────────────
+
+enum DeliveryType {
+  DELIVERY // доставка в комнату
+  PICKUP   // самовывоз из кафе
+}
+
+enum Building {
+  BUILDING_1 // корпус №1
+  BUILDING_2 // корпус №2
+}
+
+enum OrderStatus {
+  DRAFT              // формируется (корзина ещё не оплачена) — опционально
+  AWAITING_PAYMENT   // ждём оплату на стороне ЮKassa
+  PAID               // оплачен
+  PREPARING          // готовится
+  DELIVERING         // курьер везёт
+  WAITING_AT_CAFE    // курьер не встретился — ждёт в кафе
+  COMPLETED          // выдан
+  CANCELLED          // отменён
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  orderNumber Int      @unique @default(autoincrement()) // «Ваш заказ №___»
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  status       OrderStatus @default(AWAITING_PAYMENT)
+  contactPhone String // телефон, на который оформлен заказ (курьер спросит)
+
+  // Доставка
+  deliveryType DeliveryType @default(DELIVERY)
+  building     Building?
+  floor        String?
+  room         String?
+
+  // Деньги (копейки)
+  subtotalKopecks       Int // сумма позиций
+  cutleryCount          Int @default(0) // количество приборов
+  formulasSpent         Int @default(0) // сколько формул списано (шт = ₽)
+  formulaDiscountKopecks Int @default(0) // скидка от формул в копейках (= formulasSpent * 100)
+  totalKopecks          Int // итог к оплате
+  formulasToEarn        Int @default(0) // сколько формул начислится (7% от итога)
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  items               OrderItem[]
+  payment             Payment?
+  formulaTransactions FormulaTransaction[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+// Позиция заказа со снимком названия и цены на момент покупки.
+model OrderItem {
+  id           String    @id @default(cuid())
+  orderId      String
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId   String?
+  menuItem     MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  nameSnapshot  String // название на момент заказа
+  priceKopecks  Int // цена за единицу на момент заказа
+  quantity      Int
+  lineTotalKopecks Int // priceKopecks * quantity
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ─────────────── Платежи (ЮKassa) ───────────────
+
+enum PaymentProvider {
+  YOOKASSA
+}
+
+enum PaymentStatus {
+  PENDING
+  WAITING_FOR_CAPTURE
+  SUCCEEDED
+  CANCELED
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  orderId           String          @unique
+  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider          PaymentProvider @default(YOOKASSA)
+  providerPaymentId String?         @unique // id платежа в ЮKassa
+  status            PaymentStatus   @default(PENDING)
+  amountKopecks     Int
+  confirmationUrl   String? // ссылка на страницу оплаты
+  rawPayload        Json? // сырой ответ/вебхук провайдера
+  createdAt         DateTime        @default(now())
+  paidAt            DateTime?
+
+  @@map("payments")
+}
+
+// ─────────────── Бонусы «формулы» (леджер) ───────────────
+
+enum FormulaTxType {
+  EARN   // начисление (+7% от заказа)
+  SPEND  // списание при оплате заказа
+  BURN   // сгорание 1-го числа месяца
+  ADJUST // ручная корректировка (админ)
+}
+
+enum FormulaTxStatus {
+  PENDING // начислено, но станет доступно позже («завтра»)
+  ACTIVE  // доступно к трате
+  SPENT   // потрачено
+  BURNED  // сгорело
+  CANCELLED
+}
+
+// Каждая запись — движение формул. Баланс пользователя = сумма активных.
+model FormulaTransaction {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId      String?
+  order        Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  type         FormulaTxType
+  status       FormulaTxStatus
+  amount       Int // знаковое: +начисление / −списание, −сгорание
+  balanceAfter Int? // баланс после операции (для истории)
+  availableAt  DateTime? // когда начисление становится ACTIVE (для EARN — «завтра»)
+  expiresAt    DateTime? // когда сгорает (1-е число следующего месяца)
+  note         String?
+  createdAt    DateTime        @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([availableAt])
+  @@index([expiresAt])
+  @@map("formula_transactions")
+}
+
+// ─────────────── Настройки сайта (key-value) ───────────────
+// Для «прочерков» из ТЗ: часы работы, e-mail, адрес, ставки бонусов и т.п.
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ТЗ — formulaedi.ru · «Формула Еды»</title>
+<style>
+  :root{
+    --bg:#0e1512;
+    --panel:#14201b;
+    --panel-2:#1a2a23;
+    --mint:#c7efe1;
+    --mint-2:#9fe3cb;
+    --accent:#27c08a;
+    --accent-soft:#1f8e67;
+    --ink:#e8f3ee;
+    --ink-dim:#9fb4ab;
+    --line:#27392f;
+    --warn:#ff6b6b;
+    --warn-bg:#2a1718;
+    --chip:#0f3a2c;
+    --radius:14px;
+    --mono:'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;font-size:16px;
+    background-image:radial-gradient(1200px 600px at 80% -10%,rgba(39,192,138,.10),transparent 60%);
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* layout */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  header.hero{
+    padding:64px 0 40px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(39,192,138,.07),transparent);
+  }
+  .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+  h1{font-size:clamp(32px,5vw,52px);line-height:1.08;margin:.25em 0 .2em;letter-spacing:-.02em}
+  .lead{font-size:19px;color:var(--ink-dim);max-width:760px}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .pill{
+    font-family:var(--mono);font-size:13px;background:var(--chip);color:var(--mint);
+    border:1px solid var(--accent-soft);padding:6px 12px;border-radius:999px;
+  }
+
+  /* TOC */
+  nav.toc{
+    position:sticky;top:0;z-index:20;background:rgba(14,21,18,.86);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  }
+  nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding:12px 24px}
+  nav.toc a{
+    white-space:nowrap;font-size:14px;color:var(--ink-dim);padding:6px 12px;border-radius:8px;
+  }
+  nav.toc a:hover{background:var(--panel-2);color:var(--ink);text-decoration:none}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:28px;margin:0 0 6px;letter-spacing:-.01em;display:flex;align-items:center;gap:12px}
+  h2 .num{
+    font-family:var(--mono);font-size:15px;color:var(--accent);
+    background:var(--chip);border:1px solid var(--accent-soft);
+    width:34px;height:34px;display:grid;place-items:center;border-radius:9px;flex:none;
+  }
+  h3{font-size:19px;margin:28px 0 10px;color:var(--mint)}
+  .sub{color:var(--ink-dim);margin:0 0 22px;max-width:780px}
+
+  .grid{display:grid;gap:18px}
+  .cols-2{grid-template-columns:repeat(2,1fr)}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:820px){.cols-2,.cols-3{grid-template-columns:1fr}}
+
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px 22px;
+  }
+  .card h4{margin:0 0 8px;font-size:16px;color:var(--ink)}
+  .card p{margin:0;color:var(--ink-dim);font-size:15px}
+
+  ul.clean{list-style:none;padding:0;margin:0}
+  ul.clean li{position:relative;padding:9px 0 9px 28px;border-bottom:1px dashed var(--line)}
+  ul.clean li:last-child{border-bottom:0}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:17px;width:8px;height:8px;border-radius:2px;background:var(--accent);transform:rotate(45deg)}
+  ul.clean li b{color:var(--ink)}
+
+  /* mock layout of the home page */
+  .mock{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;display:grid;gap:12px;
+  }
+  .box{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;font-size:14px;
+  }
+  .box .t{font-size:11px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
+  .box.mint{background:var(--chip);border-color:var(--accent-soft)}
+  .mock-top{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:stretch}
+  .logo{
+    background:var(--chip);border:1px dashed var(--accent-soft);border-radius:50%;
+    display:grid;place-items:center;color:var(--mint);font-weight:700;font-family:var(--mono);
+    aspect-ratio:1;min-height:120px;
+  }
+  .mock-banners{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:820px){.mock-banners{grid-template-columns:1fr 1fr}.mock-top{grid-template-columns:1fr}}
+  .mock-body{display:grid;grid-template-columns:1fr 320px;gap:12px}
+  @media(max-width:820px){.mock-body{grid-template-columns:1fr}}
+  .menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media(max-width:560px){.menu-grid{grid-template-columns:1fr 1fr}}
+  .cat{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:14px;min-height:74px;display:flex;align-items:center}
+  .check{background:var(--chip);border:1px solid var(--accent-soft);border-radius:10px;padding:16px;font-size:14px}
+  .check .row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--accent-soft)}
+  .check .row:last-child{border-bottom:0}
+  .check .big{font-size:18px;font-weight:700;color:var(--mint);margin-bottom:6px}
+  .btn{background:var(--accent);color:#06150f;font-weight:700;text-align:center;border-radius:9px;padding:11px;margin-top:10px}
+
+  /* flow / states */
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0}
+  .step{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;flex:1;min-width:170px}
+  .step b{color:var(--mint);display:block;font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+  .arrow{color:var(--accent);font-size:22px;flex:none}
+  @media(max-width:680px){.arrow{transform:rotate(90deg)}.step{min-width:100%}}
+
+  /* callouts */
+  .note{border-radius:12px;padding:16px 18px;margin:16px 0;border:1px solid;font-size:15px}
+  .note .lbl{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .note.warn{background:var(--warn-bg);border-color:#5a2a2c}
+  .note.warn .lbl{color:var(--warn)}
+  .note.info{background:var(--panel);border-color:var(--accent-soft)}
+  .note.info .lbl{color:var(--accent)}
+
+  /* formula highlight */
+  .formula{font-family:var(--mono);background:#06150f;border:1px solid var(--accent-soft);border-radius:8px;padding:2px 8px;color:var(--mint);font-size:.92em}
+
+  /* message bubbles */
+  .bubble{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:14px 16px;margin:12px 0;font-size:15px}
+  .bubble .who{font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+  th{color:var(--mint);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+  td:first-child{color:var(--ink);font-weight:600;white-space:nowrap}
+  tr:hover td{background:var(--panel)}
+
+  footer{padding:40px 0 70px;color:var(--ink-dim);font-size:14px}
+  footer .legal{font-family:var(--mono);font-size:13px;color:var(--mint);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px}
+  .src-note{font-size:13px;color:var(--ink-dim);margin-top:18px;font-style:italic}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Техническое задание · Часть №1 (пользовательская часть)</span>
+    <h1>formulaedi.ru — «Формула&nbsp;Еды»</h1>
+    <p class="lead">Сайт доставки еды до комнаты в общежитии МАДИ. Одностраничный заказ еды с живым чеком и бонусной программой лояльности «формулы». Ниже — разбор макета и всей логики из ТЗ простым языком.</p>
+    <div class="hero-meta">
+      <span class="pill">🍔 Доставка еды</span>
+      <span class="pill">⚡ за 30 минут или быстрее</span>
+      <span class="pill">🏠 общежитие МАДИ, корп. №1 / №2</span>
+      <span class="pill">🎁 бонусы «формулы»</span>
+      <span class="pill">📱 авторизация по SMS-коду</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#concept">Концепция</a>
+    <a href="#layout">Макет главной</a>
+    <a href="#menu">Меню</a>
+    <a href="#check">Зона «Ваш чек»</a>
+    <a href="#formuly">Бонусы «формулы»</a>
+    <a href="#auth">Авторизация</a>
+    <a href="#order">Оформление заказа</a>
+    <a href="#rules">Правила и валидация</a>
+    <a href="#footer-info">Футер</a>
+    <a href="#summary">Чек-лист</a>
+  </div>
+</nav>
+
+<!-- 1. CONCEPT -->
+<section id="concept">
+  <div class="wrap">
+    <h2><span class="num">1</span>Что это за сервис</h2>
+    <p class="sub">Кафе «Формула Еды» доставляет заказы напрямую до комнаты студентам в общежитии МАДИ. Сайт — это меню + корзина («чек») на одной странице, без сложного каталога.</p>
+    <div class="grid cols-3">
+      <div class="card"><h4>🎯 Кому</h4><p>Студентам общежития МАДИ (корпуса №1 и №2). Доставка указывается как «корпус → этаж → комната» или самовывоз из кафе.</p></div>
+      <div class="card"><h4>⚡ Обещание</h4><p>«Доставим за 30 минут или быстрее». Время работы — ежедневно с ___ до ___ (часы заказчик уточняет).</p></div>
+      <div class="card"><h4>🎁 Фишка</h4><p>Собственная бонусная валюта «формулы»: возвращается 7% с заказа, можно оплатить ими до 25% следующего.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. LAYOUT -->
+<section id="layout">
+  <div class="wrap">
+    <h2><span class="num">2</span>Макет главной страницы</h2>
+    <p class="sub">Вся работа происходит на одной странице. Слева — прокручиваемое меню по категориям, справа — «прилипший» чек, который пересчитывается на лету. Ниже — схема расположения блоков.</p>
+
+    <div class="mock">
+      <!-- top -->
+      <div class="mock-top">
+        <div class="logo">ЛОГОТИП</div>
+        <div style="display:grid;gap:12px">
+          <div class="box mint" style="font-size:18px;font-weight:700;color:var(--mint)">доставим Ваш заказ до комнаты в общежитии МАДИ</div>
+          <div class="mock-banners">
+            <div class="box"><span class="t">статичный баннер</span>Доставим за 30 минут или быстрее</div>
+            <div class="box"><span class="t">динамичный баннер</span>1. «вернём 7% от заказа формулами»<br>2. «скидка 25% от заказа за формулы»</div>
+            <div class="box"><span class="t">статичный баннер</span>Реклама / акции</div>
+            <div class="box"><span class="t">личный кабинет</span>вход / авторизация<br>+7 _______ · отправить код</div>
+          </div>
+        </div>
+      </div>
+      <div class="box mint" style="text-align:center;font-weight:600">место для баннера · технические объявления</div>
+
+      <!-- body -->
+      <div class="mock-body">
+        <div>
+          <div class="menu-grid">
+            <div class="cat">бейгл, бургер, чиабатта, пита, буррито, шаурма</div>
+            <div class="cat">сендвич, сендвич-ролл, сендвич-круассан</div>
+            <div class="cat">пицца-мини, хот-дог, выпечка</div>
+            <div class="cat">вторые блюда с гарниром</div>
+            <div class="cat">супы</div>
+            <div class="cat">салаты</div>
+            <div class="cat">продукция Халяль</div>
+            <div class="cat">сдобная выпечка, десерты, кукис</div>
+            <div class="cat">напитки</div>
+          </div>
+        </div>
+        <div class="check">
+          <div class="big">ВАШ ЧЕК</div>
+          <div style="color:var(--ink-dim);font-size:13px;margin-bottom:8px">выбранные позиции · количество · цена</div>
+          <div class="row"><span>добавить приборы</span><span>кол-во ▾</span></div>
+          <div class="row"><span>списать формулы</span><span>кол-во ▾</span></div>
+          <div class="row"><span>Итоговая стоимость</span><span>_____ ₽</span></div>
+          <div class="row"><span>доставить</span><span>корп. №1/№2</span></div>
+          <div class="row"><span>этаж · комната</span><span>___ · ___</span></div>
+          <div class="row"><span>самовывоз из кафе</span><span>☑</span></div>
+          <div class="btn">оплатить ___ ₽ и оформить заказ</div>
+          <div style="color:var(--ink-dim);font-size:12px;margin-top:8px">завтра начислится ___ формул</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note info">
+      <span class="lbl">Поведение прокрутки</span>
+      При прокрутке вниз <b>крутится только ассортимент</b> в заданной последовательности. Иконки категорий и цветные блоки (баннеры, чек) остаются статичными на своих местах и не прокручиваются.
+    </div>
+  </div>
+</section>
+
+<!-- 3. MENU -->
+<section id="menu">
+  <div class="wrap">
+    <h2><span class="num">3</span>Категории меню</h2>
+    <p class="sub">9 категорий-иконок. По клику на категорию открывается окно с ассортиментом, при этом цветная информация (баннеры, чек) остаётся на своих местах.</p>
+    <div class="grid cols-3">
+      <div class="card"><h4>1 · Стрит-фуд</h4><p>бейгл, бургер, чиабатта, пита, буррито, шаурма</p></div>
+      <div class="card"><h4>2 · Сэндвичи</h4><p>сендвич, сендвич-ролл, сендвич-круассан</p></div>
+      <div class="card"><h4>3 · Горячее лёгкое</h4><p>пицца-мини, хот-дог, выпечка</p></div>
+      <div class="card"><h4>4 · Вторые блюда</h4><p>вторые блюда с гарниром</p></div>
+      <div class="card"><h4>5 · Супы</h4><p>супы</p></div>
+      <div class="card"><h4>6 · Салаты</h4><p>салаты</p></div>
+      <div class="card"><h4>7 · Халяль</h4><p>продукция Халяль</p></div>
+      <div class="card"><h4>8 · Десерты</h4><p>сдобная выпечка, десерты, кукис</p></div>
+      <div class="card"><h4>9 · Напитки</h4><p>напитки</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. CHECK -->
+<section id="check">
+  <div class="wrap">
+    <h2><span class="num">4</span>Зона «Ваш чек» (корзина)</h2>
+    <p class="sub">Главный интерактивный блок. Любое действие пользователя автоматически пересчитывает итоговую стоимость.</p>
+    <ul class="clean">
+      <li><b>Список позиций.</b> Показывает выбранные товары, напротив каждого — количество и цена.</li>
+      <li><b>Добавить приборы.</b> Поле «количество» с выпадающим списком (▾).</li>
+      <li><b>Списать формулы.</b> Поле «количество» с выпадающим списком (▾). Сумма списания считается автоматически — см. раздел «Бонусы».</li>
+      <li><b>Итоговая стоимость.</b> Поле <span class="formula">_____ ₽</span>. <b>Меняется автоматически</b>, если добавили приборы или списали формулы.</li>
+      <li><b>Доставить.</b> Выбор корпуса (№1 / №2), поле «этаж», поле «комната». Либо чек-бокс «самовывоз из кафе».</li>
+      <li><b>Кнопка оплаты.</b> «оплатить ___ ₽ и оформить заказ» — сумма подставляется автоматически.</li>
+      <li><b>Начисление бонусов.</b> Подпись под кнопкой: «завтра начислится ___ формул» (7% от итоговой стоимости).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 5. FORMULY -->
+<section id="formuly">
+  <div class="wrap">
+    <h2><span class="num">5</span>Бонусная программа «формулы»</h2>
+    <p class="sub">«Формулы» — внутренняя бонусная валюта сервиса. Это ключевая бизнес-механика, её надо реализовать точно.</p>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h4>➕ Как начисляются</h4>
+        <p>За каждый заказ возвращается <b>7% от итоговой стоимости</b> в виде «формул». Начисление происходит <b>на следующий день</b> («завтра начислится ___ формул»).</p>
+      </div>
+      <div class="card">
+        <h4>➖ Как списываются</h4>
+        <p>Можно оплатить «формулами» <b>до 25% суммы заказа</b>. Сумма списания считается автоматом: <b>25% от суммы</b>, либо <b>все имеющиеся формулы</b>, если 25% больше, чем есть формул на счету.</p>
+      </div>
+    </div>
+
+    <div class="note warn">
+      <span class="lbl">Важно · сгорание</span>
+      Неиспользованные бонусные «формулы» <b>сгорают раз в календарный месяц — 1-го числа</b>. С 27-го по 1-е число каждого месяца возле иконки личного кабинета появляется баннер-предупреждение со штампом «СГОРЯТ 01.__:__».
+    </div>
+
+    <h3>Логика расчёта списания</h3>
+    <table>
+      <tr><th>Ситуация</th><th>Сколько спишется формулами</th></tr>
+      <tr><td>Формул много</td><td>Ровно 25% от суммы заказа</td></tr>
+      <tr><td>Формул мало (меньше, чем 25% суммы)</td><td>Все формулы со счёта</td></tr>
+      <tr><td>Формул нет</td><td>0 (оплата только деньгами)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. AUTH -->
+<section id="auth">
+  <div class="wrap">
+    <h2><span class="num">6</span>Авторизация (личный кабинет)</h2>
+    <p class="sub">Вход по номеру телефона и SMS-коду. <b>Никакие новые окна не открываются</b> — меняется содержимое самой кнопки «личный кабинет».</p>
+
+    <h3>Сценарий А · уже зарегистрирован</h3>
+    <div class="flow">
+      <div class="step"><b>1 · вход</b>+7 _______ → отправить код</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>2 · подтверждение</b>ввести код</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>3 · готово</b>«Добро пожаловать, Богданов Андрей. У вас 777 формул»</div>
+    </div>
+
+    <h3>Сценарий Б · новый пользователь</h3>
+    <div class="flow">
+      <div class="step"><b>1 · вход</b>+7 _______ → отправить код</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>2 · подтверждение</b>ввести код</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>3 · регистрация</b>Введите ФИО ▾</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>4 · готово</b>«Добро пожаловать, Богданов Андрей. У Вас пока нет формул»</div>
+    </div>
+
+    <div class="note info">
+      <span class="lbl">Также в блоке кабинета</span>
+      Ссылка «написать нам на почту ______» присутствует во всех состояниях кнопки личного кабинета.
+    </div>
+  </div>
+</section>
+
+<!-- 7. ORDER -->
+<section id="order">
+  <div class="wrap">
+    <h2><span class="num">7</span>Оформление и оплата заказа</h2>
+    <p class="sub">После нажатия «оплатить ___ ₽ и оформить заказ» пользователь переходит на сайт оплаты, после чего возвращается, и появляется подтверждение.</p>
+
+    <div class="flow">
+      <div class="step"><b>1</b>Кнопка «оплатить ___ ₽ и оформить заказ»</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>2</b>Переход на сайт оплаты</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>3</b>Всплывающее окно с подтверждением</div>
+      <span class="arrow">→</span>
+      <div class="step"><b>4</b>Возврат на сайт — текст дублируется в зоне чека</div>
+    </div>
+
+    <div class="bubble">
+      <div class="who">Всплывающее окно после оплаты</div>
+      «Ваш заказ №_____ принят, спешим доставить! Курьер попросит Вас назвать номер телефона, на который оформлен заказ.»<br><br>
+      Если курьер не встретится с Вами по Вашей причине — заказ будет ждать Вас в кафе «Формула Еды» в 1-м корпусе общежития МАДИ.
+    </div>
+
+    <div class="bubble">
+      <div class="who">Дублируется в зоне чека после возврата на сайт</div>
+      «Ваш заказ №_____ принят, спешим доставить! Курьер попросит Вас назвать номер телефона, на который оформлен заказ.<br><br>
+      Если курьер не встретится с Вами по Вашей причине — заказ будет ждать Вас в кафе «Формула Еды» в общежитии МАДИ по адресу: Кочновский проезд, д.7 к.1, этаж 1, в рабочее время с ___ до ___.»
+    </div>
+
+    <div class="note info">
+      <span class="lbl">После</span>
+      При оформлении <b>нового заказа</b> это окно исчезает и снова появляется обычное окно «ВАШ ЧЕК».
+    </div>
+  </div>
+</section>
+
+<!-- 8. RULES -->
+<section id="rules">
+  <div class="wrap">
+    <h2><span class="num">8</span>Правила интерфейса и валидация</h2>
+    <p class="sub">Условия, при которых элементы блокируются или меняют поведение.</p>
+    <ul class="clean">
+      <li><b>Окно ассортимента.</b> При нажатии на категорию меню открывается окно с ассортиментом, но цветная информация (баннеры, чек) остаётся на своих местах.</li>
+      <li><b>Блокировка оплаты.</b> Если пользователь не вошёл в личный кабинет <i>или</i> не заполнил адрес доставки — кнопку «оплатить и оформить» нажать нельзя.</li>
+      <li><b>Подсветка ошибок.</b> Незаполненные обязательные поля подсвечиваются <span style="color:var(--warn);font-weight:700">красным цветом</span>.</li>
+      <li><b>Личный кабинет.</b> Кнопка не открывает новых окон — меняется её собственное содержимое (см. раздел «Авторизация»).</li>
+      <li><b>Автоматический пересчёт.</b> Итоговая стоимость и поле «начислится ___ формул» пересчитываются автоматически при изменении состава заказа, приборов или списания формул.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. FOOTER INFO -->
+<section id="footer-info">
+  <div class="wrap">
+    <h2><span class="num">9</span>Информация внизу сайта (футер)</h2>
+    <p class="sub">Появляется при прокрутке меню в самый конец страницы.</p>
+    <ul class="clean">
+      <li>«Неиспользованные бонусные «формулы» сгорают раз в календарный месяц — первого числа.»</li>
+      <li>«Если у Вас возникли вопросы или предложения — пишите нам на почту ________. Либо приходите к нам в кафе «Формула Еды» по адресу: Кочновский проезд, д.7 к.1, этаж 1, в рабочее время с ___ до ___. В случае спорных моментов мы обязательно найдём решение.»</li>
+    </ul>
+    <div class="bubble">
+      <div class="who">Баннер у иконки личного кабинета · с 27-го по 1-е число</div>
+      «Добро пожаловать, Богданов Андрей. У вас 777 формул» — со штампом <b style="color:var(--warn)">СГОРЯТ 01.__:__</b>
+    </div>
+  </div>
+</section>
+
+<!-- 10. SUMMARY -->
+<section id="summary">
+  <div class="wrap">
+    <h2><span class="num">10</span>Чек-лист для разработки</h2>
+    <p class="sub">Краткая выжимка функционала, который нужно реализовать.</p>
+    <div class="grid cols-2">
+      <div class="card"><h4>Главная (одностраничник)</h4><p>Шапка с логотипом и слоганом, 3 баннера (2 статичных + 1 динамичный с 2 сообщениями), блок личного кабинета, полоса техобъявлений.</p></div>
+      <div class="card"><h4>Меню из 9 категорий</h4><p>Иконки статичны, прокручивается только ассортимент; клик открывает окно с товарами.</p></div>
+      <div class="card"><h4>Живой чек</h4><p>Позиции + кол-во + цена, приборы, списание формул, авто-итог, выбор адреса/самовывоза, кнопка оплаты.</p></div>
+      <div class="card"><h4>Бонусы «формулы»</h4><p>Начисление 7%, списание до 25%, сгорание 1-го числа, баннер-предупреждение 27→01.</p></div>
+      <div class="card"><h4>Авторизация по SMS</h4><p>2 сценария (старый/новый юзер), кнопка-перевёртыш без новых окон, ввод ФИО при регистрации.</p></div>
+      <div class="card"><h4>Оплата и подтверждение</h4><p>Переход на платёжку, всплывающее окно, дублирование в чеке, блокировка без авторизации/адреса, красная подсветка ошибок.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Реквизиты из ТЗ:</p>
+    <div class="legal">ИП Богданов Андрей Сергеевич · ИНН: 245727420008 · ОГРН: 310245714400031<br>Адрес кафе «Формула Еды»: Кочновский проезд, д.7 к.1, этаж 1</div>
+    <p class="src-note">Документ составлен по ТЗ «сайт formulaedi.ru, часть №1 для пользователя» (2 страницы макета). Прочерки (___) в полях — это места, где заказчик ещё уточняет данные (часы работы, e-mail и т.п.).</p>
+  </div>
+</footer>
+
+</body>
+</html>

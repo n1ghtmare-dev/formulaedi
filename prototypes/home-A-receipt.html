@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Формула Еды — доставка до комнаты за 30 минут · общежитие МАДИ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Golos+Text:wght@400..900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   «ТЕРМОЧЕК ИЗ КАФЕ» — интерфейс как живой кассовый чек
+   бумага #f4f1ea · чернила #1c1b16 · штамп #d43f2a
+   ============================================================ */
+:root{
+  --paper:#f4f1ea;
+  --rcpt:#fffdf6;
+  --ink:#1c1b16;
+  --ink-60:rgba(28,27,22,.6);
+  --ink-35:rgba(28,27,22,.35);
+  --ink-15:rgba(28,27,22,.14);
+  --red:#d43f2a;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Golos Text',sans-serif;
+  --topbar-h:56px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--topbar-h) + 14px)}
+body{
+  font-family:var(--sans);
+  background:var(--paper);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+/* бумажное зерно поверх всего */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:200;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+img{display:block;max-width:100%}
+button{font:inherit;cursor:pointer;background:none;border:none;color:inherit}
+a{color:inherit}
+
+/* ---------- ТОП-БАР ---------- */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:90;
+  height:var(--topbar-h);
+  background:var(--paper);
+  border-bottom:1.5px dashed var(--ink-35);
+  display:flex;align-items:stretch;gap:0;
+  font-family:var(--mono);
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:0 14px;
+  border-right:1.5px dashed var(--ink-35);
+  font-weight:800;font-size:13px;letter-spacing:.08em;white-space:nowrap;
+  text-decoration:none;
+}
+.brand em{font-style:normal;font-weight:100;color:var(--ink-60)}
+.topnav{
+  flex:1;display:flex;align-items:center;gap:0;
+  overflow-x:auto;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.topnav::-webkit-scrollbar{display:none}
+.topnav a{
+  font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+  text-decoration:none;padding:6px 12px;white-space:nowrap;
+  color:var(--ink-60);
+  border-radius:2px;
+  transition:color .2s,background .2s;
+}
+.topnav a:hover{color:var(--ink)}
+.topnav a.active{color:var(--rcpt);background:var(--ink)}
+.cab-btn{
+  font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:0 16px;border-left:1.5px dashed var(--ink-35);
+  white-space:nowrap;
+  transition:background .2s,color .2s;
+}
+.cab-btn:hover{background:var(--ink);color:var(--rcpt)}
+/* дроп кабинета */
+.cab-panel{
+  position:fixed;top:var(--topbar-h);right:0;z-index:89;
+  width:min(320px,100vw);
+  background:var(--rcpt);
+  border:1.5px solid var(--ink);border-top:none;
+  padding:18px;
+  font-family:var(--mono);
+  display:none;
+}
+.cab-panel.open{display:block;animation:printline .3s both}
+.cab-panel label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60);margin-bottom:6px}
+.cab-panel input{
+  width:100%;font-family:var(--mono);font-size:15px;
+  background:transparent;border:none;border-bottom:2px dotted var(--ink-35);
+  padding:6px 2px;color:var(--ink);outline:none;margin-bottom:14px;
+}
+.cab-panel input:focus{border-bottom-color:var(--red)}
+.cab-panel .cab-go{
+  width:100%;background:var(--ink);color:var(--rcpt);
+  font-family:var(--mono);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  padding:11px;transition:background .2s;
+}
+.cab-panel .cab-go:hover{background:var(--red)}
+.cab-note{font-size:10px;color:var(--ink-60);margin-top:10px;line-height:1.6}
+
+/* ---------- КАРКАС ---------- */
+.frame{
+  max-width:1220px;margin:0 auto;
+  padding:calc(var(--topbar-h) + 20px) 16px 110px;
+}
+@media (min-width:768px){
+  .frame{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 336px;
+    gap:28px;
+    align-items:start;
+    padding:calc(var(--topbar-h) + 28px) 24px 60px;
+  }
+}
+@media (min-width:1440px){
+  .frame{max-width:1400px;grid-template-columns:minmax(0,1fr) 430px;gap:48px}
+}
+
+/* ---------- ГЕРОЙ ---------- */
+.hero{padding:26px 0 10px}
+.hero-over{
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-60);
+  display:flex;align-items:center;gap:12px;margin-bottom:22px;
+}
+.hero-over::before{content:'';width:34px;height:1.5px;background:var(--red)}
+.hero h1{
+  font-family:var(--mono);
+  font-size:clamp(34px,8.5vw,76px);
+  line-height:.98;
+  letter-spacing:-.02em;
+  text-transform:uppercase;
+  font-weight:800;
+  margin-bottom:8px;
+}
+.hero h1 .thin{
+  display:block;
+  font-weight:100;
+  font-style:italic;
+  letter-spacing:0;
+  color:var(--ink);
+}
+.hero h1 .red{color:var(--red)}
+.hero-sub{
+  max-width:52ch;color:var(--ink-60);
+  font-size:15px;margin:18px 0 24px;
+}
+.hero-facts{
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+  display:flex;flex-wrap:wrap;gap:8px;
+}
+.hero-facts span{
+  border:1.5px solid var(--ink);
+  padding:6px 12px;font-weight:500;text-transform:uppercase;
+  background:var(--rcpt);
+}
+.hero-facts span.hot{border-color:var(--red);color:var(--red);font-weight:800}
+@media (min-width:1440px){
+  .hero{padding:44px 0 16px}
+  .hero-sub{font-size:17px}
+}
+
+/* разделитель-строка «* * * МЕНЮ * * *» */
+.astro{
+  font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.35em;
+  text-transform:uppercase;color:var(--ink-60);
+  text-align:left;
+  padding:30px 0 6px;
+  overflow:hidden;white-space:nowrap;
+}
+.astro b{font-weight:800;color:var(--ink);letter-spacing:.35em}
+
+/* ---------- КАТЕГОРИИ ---------- */
+.cat{padding:34px 0 6px;border-top:1.5px dashed var(--ink-35)}
+.cat:first-of-type{border-top:none}
+.cat-head{
+  display:flex;align-items:baseline;gap:16px;margin-bottom:20px;
+}
+.cat-num{
+  font-family:var(--mono);font-weight:100;
+  font-size:clamp(44px,7vw,72px);
+  line-height:1;color:var(--ink-35);
+  letter-spacing:-.04em;
+}
+.cat-head h2{
+  font-family:var(--mono);font-weight:800;text-transform:uppercase;
+  font-size:clamp(19px,3.4vw,30px);
+  letter-spacing:.01em;line-height:1.1;
+}
+.cat-head .cnt{
+  font-family:var(--mono);font-weight:100;font-size:13px;color:var(--ink-60);
+  margin-left:auto;white-space:nowrap;
+}
+@media (min-width:1440px){.cat{padding:48px 0 10px}}
+
+/* фирменное блюдо категории — с ксерокс-фото */
+.dish{
+  display:grid;grid-template-columns:104px 1fr;gap:16px;
+  background:var(--rcpt);
+  border:1.5px solid var(--ink);
+  padding:12px;
+  margin-bottom:14px;
+}
+.thumb{
+  background:var(--ink); /* фон из палитры за каждым фото */
+  width:104px;height:104px;overflow:hidden;position:relative;
+}
+.thumb img{
+  width:100%;height:100%;object-fit:cover;
+  filter:grayscale(1) contrast(1.35) brightness(1.04);
+  mix-blend-mode:screen;opacity:.92;
+}
+.thumb::after{ /* растровые линии термопечати поверх фото */
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(28,27,22,.28) 0 1px,transparent 1px 3px);
+  pointer-events:none;
+}
+.dish-body{display:flex;flex-direction:column;min-width:0}
+.dish-body h3{
+  font-family:var(--mono);font-weight:800;font-size:15px;
+  text-transform:uppercase;letter-spacing:.02em;line-height:1.25;
+}
+.dish-body p{font-size:13px;color:var(--ink-60);margin:4px 0 10px;line-height:1.5}
+.dish-row{margin-top:auto;display:flex;align-items:center;gap:12px}
+.price{font-family:var(--mono);font-weight:800;font-size:16px;white-space:nowrap}
+.add{
+  font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  border:1.5px solid var(--ink);padding:8px 14px;background:var(--rcpt);
+  transition:background .15s,color .15s,border-color .15s;
+  white-space:nowrap;
+}
+.add:hover{background:var(--ink);color:var(--rcpt)}
+.add:active{transform:translateY(1px)}
+.add.added{background:var(--red);border-color:var(--red);color:var(--rcpt)}
+@media (min-width:1440px){
+  .dish{grid-template-columns:132px 1fr;padding:14px}
+  .thumb{width:132px;height:132px}
+  .dish-body h3{font-size:17px}
+}
+
+/* остальные позиции — строки как в чеке */
+.rows{list-style:none}
+.rows li{
+  display:flex;align-items:baseline;gap:10px;
+  padding:11px 2px;
+  border-bottom:1px dotted var(--ink-35);
+  font-family:var(--mono);
+}
+.rows li:last-child{border-bottom:none}
+.rd-name{font-size:13.5px;font-weight:500;text-transform:uppercase;letter-spacing:.02em}
+.leader{flex:1;border-bottom:2px dotted var(--ink-35);transform:translateY(-4px);min-width:16px}
+.rows .price{font-size:13.5px;font-weight:800}
+.rows .add{padding:5px 10px;font-size:12px;line-height:1}
+
+/* ---------- ПАМЯТКА ПО ФОРМУЛАМ ---------- */
+.memo{
+  margin:44px 0 10px;
+  background:var(--rcpt);
+  border:1.5px solid var(--ink);
+  padding:22px 20px 26px;
+  position:relative;
+  font-family:var(--mono);
+}
+.memo::before{
+  content:'ПАМЯТКА';
+  position:absolute;top:-11px;left:16px;
+  background:var(--ink);color:var(--rcpt);
+  font-size:10px;font-weight:800;letter-spacing:.2em;
+  padding:4px 10px;
+}
+.memo h2{
+  font-weight:800;font-size:clamp(18px,3vw,26px);text-transform:uppercase;
+  margin-bottom:14px;
+}
+.memo h2 i{font-style:normal;color:var(--red)}
+.memo ul{list-style:none}
+.memo li{
+  display:flex;gap:12px;align-items:baseline;
+  font-size:13px;padding:9px 0;
+  border-bottom:1px dotted var(--ink-35);
+}
+.memo li:last-child{border-bottom:none}
+.memo li b{font-weight:800;white-space:nowrap;min-width:74px;color:var(--red)}
+.memo li span{color:var(--ink-60);font-family:var(--sans);font-size:13.5px}
+
+/* ---------- ФУТЕР ---------- */
+footer{
+  border-top:1.5px dashed var(--ink-35);
+  margin-top:44px;padding:24px 2px 8px;
+  font-family:var(--mono);font-size:12px;color:var(--ink-60);
+  display:flex;flex-direction:column;gap:6px;
+}
+footer b{color:var(--ink);font-weight:800;letter-spacing:.06em}
+
+/* ============================================================
+   ЧЕК — правая прилипшая колонка
+   ============================================================ */
+.receipt-col{position:relative}
+@media (min-width:768px){
+  .receipt-col{
+    position:sticky;top:calc(var(--topbar-h) + 16px);
+    max-height:calc(100vh - var(--topbar-h) - 30px);
+    overflow-y:auto;overflow-x:visible;
+    scrollbar-width:none;
+    padding:4px 4px 18px;
+  }
+  .receipt-col::-webkit-scrollbar{display:none}
+}
+.receipt{
+  position:relative;
+  background:var(--rcpt);
+  /* полосы термопечати */
+  background-image:repeating-linear-gradient(0deg,rgba(28,27,22,.02) 0 2px,transparent 2px 5px);
+  box-shadow:0 10px 34px rgba(28,27,22,.16);
+  padding:26px 18px 30px;
+  font-family:var(--mono);
+  color:var(--ink);
+}
+/* перфорированные края: зубцы сверху и снизу */
+.receipt::before,
+.receipt::after{
+  content:'';position:absolute;left:0;right:0;height:9px;
+}
+.receipt::before{
+  top:-9px;
+  background:conic-gradient(from 135deg at 50% 0,var(--rcpt) 90deg,#0000 0) 0 0/16px 9px repeat-x;
+}
+.receipt::after{
+  bottom:-9px;
+  background:conic-gradient(from -45deg at 50% 100%,var(--rcpt) 90deg,#0000 0) 0 0/16px 9px repeat-x;
+}
+.receipt-close{display:none}
+
+.r-logo{
+  display:block;text-align:center;
+  font-weight:800;font-size:19px;letter-spacing:.14em;text-transform:uppercase;
+}
+.r-meta{
+  text-align:center;font-size:10.5px;font-weight:500;
+  letter-spacing:.08em;color:var(--ink-60);text-transform:uppercase;
+  margin-top:3px;
+}
+.r-sep{
+  border:none;border-top:1.5px dashed var(--ink-35);
+  margin:13px 0;
+}
+.r-line{
+  display:flex;align-items:baseline;gap:8px;
+  font-size:12.5px;font-weight:500;
+  padding:5px 0;
+  text-transform:uppercase;letter-spacing:.01em;
+}
+.r-line .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-line .qc{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.qbtn{
+  width:17px;height:17px;line-height:15px;text-align:center;
+  border:1px solid var(--ink-35);font-size:11px;font-weight:800;
+  color:var(--ink-60);
+  transition:border-color .15s,color .15s;
+}
+.qbtn:hover{border-color:var(--red);color:var(--red)}
+.r-line .sum{font-weight:800;white-space:nowrap}
+.r-empty{
+  text-align:center;font-size:11px;color:var(--ink-60);
+  padding:14px 0;letter-spacing:.1em;text-transform:uppercase;
+}
+/* сервисные строки: приборы, формулы */
+.r-svc{
+  display:flex;align-items:center;gap:8px;
+  font-size:11.5px;font-weight:500;text-transform:uppercase;
+  padding:6px 0;color:var(--ink);
+}
+.r-svc .leader{border-bottom-color:var(--ink-15)}
+.r-svc .hint{display:block;font-size:10px;color:var(--ink-60);text-transform:none;letter-spacing:0;margin:-2px 0 4px;font-family:var(--sans)}
+.chk{
+  font-family:var(--mono);font-size:11.5px;font-weight:500;text-transform:uppercase;
+  letter-spacing:.02em;display:flex;align-items:center;gap:8px;text-align:left;
+}
+.chk .box{font-weight:800}
+.chk:hover .box{color:var(--red)}
+.r-disc{color:var(--red);font-weight:800}
+/* итог */
+.r-total{
+  display:flex;align-items:baseline;gap:8px;
+  font-size:17px;font-weight:800;text-transform:uppercase;
+  padding:4px 0 2px;
+}
+.r-total .leader{border-bottom-width:3px;border-bottom-color:var(--ink)}
+.r-accrue{
+  font-size:10.5px;color:var(--ink-60);letter-spacing:.04em;
+  margin-top:4px;
+}
+.r-accrue b{color:var(--red);font-weight:800}
+/* доставка */
+.r-dlv{margin-top:14px}
+.dlv-tabs{display:flex;gap:6px;margin-bottom:10px}
+.dlv-tabs button{
+  flex:1;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  border:1.5px solid var(--ink-35);padding:8px 4px;color:var(--ink-60);
+  transition:all .15s;
+}
+.dlv-tabs button.on{border-color:var(--ink);background:var(--ink);color:var(--rcpt)}
+.dlv-fields{display:flex;gap:8px}
+.dlv-fields label{
+  flex:1;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-60);
+}
+.dlv-fields input{
+  width:100%;font-family:var(--mono);font-size:14px;font-weight:800;text-align:center;
+  background:transparent;border:none;border-bottom:2px dotted var(--ink-35);
+  padding:4px 0;color:var(--ink);outline:none;margin-top:2px;
+}
+.dlv-fields input:focus{border-bottom-color:var(--red)}
+.dlv-pickup{
+  display:none;font-size:11px;color:var(--ink-60);line-height:1.6;
+  font-family:var(--sans);
+}
+.receipt.pickup .dlv-fields{display:none}
+.receipt.pickup .dlv-pickup{display:block}
+/* оплата */
+.pay{
+  width:100%;margin-top:16px;
+  background:var(--ink);color:var(--rcpt);
+  font-family:var(--mono);font-weight:800;font-size:13px;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:15px 10px;
+  transition:background .2s;
+}
+.pay:hover{background:var(--red)}
+.pay:active{transform:translateY(1px)}
+/* штрихкод */
+.barcode{
+  height:44px;margin:18px 6px 6px;
+  background:
+    repeating-linear-gradient(90deg,
+      var(--ink) 0 2px,transparent 2px 5px,
+      var(--ink) 5px 6px,transparent 6px 11px,
+      var(--ink) 11px 15px,transparent 15px 17px,
+      var(--ink) 17px 18px,transparent 18px 24px,
+      var(--ink) 24px 27px,transparent 27px 29px,
+      var(--ink) 29px 30px,transparent 30px 36px);
+}
+.bc-num{
+  text-align:center;font-size:10px;letter-spacing:.42em;color:var(--ink-60);
+  margin-top:5px;
+}
+.r-thanks{
+  text-align:center;font-size:11px;font-weight:500;letter-spacing:.3em;
+  text-transform:uppercase;margin-top:14px;color:var(--ink);
+}
+/* штамп */
+.r-totzone{position:relative}
+.stamp{
+  position:absolute;right:54px;top:-14px;z-index:5;
+  transform:rotate(-9deg);
+  border:3px solid var(--red);color:var(--red);
+  padding:8px 14px 9px;text-align:center;
+  mix-blend-mode:multiply;
+  opacity:0;
+  pointer-events:none;
+}
+.stamp b{display:block;font-size:17px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.stamp span{display:block;font-size:9px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;margin-top:2px}
+.stamp.on{animation:stampin .5s cubic-bezier(.2,1.6,.35,1) both}
+@keyframes stampin{
+  0%{opacity:0;transform:rotate(-9deg) scale(1.4)}
+  62%{opacity:.95;transform:rotate(-9deg) scale(.96)}
+  100%{opacity:.9;transform:rotate(-9deg) scale(1)}
+}
+/* печать строк */
+.p{animation:printline .34s both;animation-delay:calc(var(--i,0)*90ms + 150ms)}
+.p-now{animation:printline .3s both}
+@keyframes printline{
+  from{opacity:0;clip-path:inset(0 100% 0 0);transform:translateY(-4px)}
+  to{opacity:1;clip-path:inset(0 -2% 0 0);transform:none}
+}
+/* дёрганье печатающей головки */
+.receipt.jolt{animation:jolt .22s linear}
+@keyframes jolt{
+  0%,100%{transform:translateY(0)}
+  30%{transform:translateY(1px)}
+  65%{transform:translateY(-1px)}
+}
+
+/* ---------- МОБИЛЬНАЯ ПОЛОСА-ЧЕК ---------- */
+.cartbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:95;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:var(--ink);color:var(--rcpt);
+  font-family:var(--mono);
+  padding:14px 18px;
+  border:none;width:100%;text-align:left;
+}
+.cartbar::before{ /* зубцы чека сверху полосы */
+  content:'';position:absolute;top:-8px;left:0;right:0;height:8px;
+  background:conic-gradient(from 135deg at 50% 0,var(--ink) 90deg,#0000 0) 0 0/14px 8px repeat-x;
+}
+.cartbar .cb-sum{font-size:16px;font-weight:800;letter-spacing:.02em}
+.cartbar .cb-open{font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,253,246,.72)}
+.cartbar.jolt{animation:jolt .22s linear}
+@media (min-width:768px){.cartbar{display:none}}
+
+@media (max-width:767px){
+  .receipt-col{
+    position:fixed;inset:0;z-index:120;
+    background:rgba(28,27,22,.42);
+    padding:40px 14px 14px;
+    overflow-y:auto;
+    transform:translateY(102%);
+    transition:transform .45s cubic-bezier(.22,.9,.3,1);
+    visibility:hidden;
+  }
+  body.cart-open .receipt-col{transform:none;visibility:visible}
+  body.cart-open{overflow:hidden}
+  .receipt{max-width:420px;margin:0 auto}
+  .receipt-close{
+    display:block;width:100%;text-align:right;
+    font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-60);
+    padding:0 0 12px;
+  }
+  .receipt-close:hover{color:var(--red)}
+}
+
+/* ---------- ДОСТУПНОСТЬ ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+  .stamp{opacity:.9}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= ТОП-БАР ================= -->
+<header class="topbar">
+  <a class="brand" href="#top">ФОРМУЛА&nbsp;ЕДЫ <em>/ касса 01</em></a>
+  <nav class="topnav" id="topnav" aria-label="Категории меню">
+    <a href="#street">Стрит-фуд</a>
+    <a href="#sandwiches">Сэндвичи</a>
+    <a href="#pizza">Пицца · выпечка</a>
+    <a href="#mains">Вторые</a>
+    <a href="#soups">Супы</a>
+    <a href="#salads">Салаты</a>
+    <a href="#halal">Халяль</a>
+    <a href="#desserts">Десерты</a>
+    <a href="#drinks">Напитки</a>
+  </nav>
+  <button class="cab-btn" id="cabBtn" aria-expanded="false">Кабинет</button>
+</header>
+
+<div class="cab-panel" id="cabPanel">
+  <label for="cabPhone">Телефон</label>
+  <input id="cabPhone" type="tel" inputmode="tel" placeholder="+7 ___ ___-__-__" autocomplete="tel">
+  <button class="cab-go" type="button">Получить код из SMS</button>
+  <p class="cab-note">Вход без пароля: пришлём код в SMS. История заказов и баланс формул — здесь же, без новых окон.</p>
+</div>
+
+<div class="frame" id="top">
+
+  <!-- ================= ЛЕВАЯ КОЛОНКА ================= -->
+  <main>
+
+    <section class="hero">
+      <p class="hero-over">Общежитие МАДИ · корпуса №1 и №2 · ежедневно 09:00–23:00</p>
+      <h1>
+        Еда до<br>комнаты
+        <span class="thin">за <span class="red">30 минут</span> или быстрее</span>
+      </h1>
+      <p class="hero-sub">Заказываешь — касса печатает чек — несём горячее прямо до двери. Или забери сам в кафе на Кочновском проезде, 7к1. Без пафоса, по-своему.</p>
+      <div class="hero-facts">
+        <span class="hot">+7% формулами за каждый заказ</span>
+        <span>оплата формулами до 25%</span>
+        <span>доставка до комнаты — 0 ₽</span>
+      </div>
+    </section>
+
+    <p class="astro">* * * <b>меню · 9 отделов</b> * * *</p>
+
+    <!-- ======== 01 СТРИТ-ФУД ======== -->
+    <section class="cat" id="street">
+      <header class="cat-head"><span class="cat-num">01</span><h2>Стрит-фуд</h2><span class="cnt">6 позиций</span></header>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/shawarma.jpg" alt="Шаурма классик на тарелке" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Шаурма классик</h3>
+          <p>Курица на гриле, свежие овощи, фирменный чесночный соус, тонкий лаваш.</p>
+          <div class="dish-row"><span class="price">269 ₽</span><button class="add" data-name="Шаурма классик" data-price="269">+ в чек</button></div>
+        </div>
+      </article>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/burger.jpg" alt="Бургер «Формула» с картошкой фри" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Бургер «Формула»</h3>
+          <p>Говяжья котлета, чеддер, карамелизированный лук, бриошь. Фри в комплекте.</p>
+          <div class="dish-row"><span class="price">249 ₽</span><button class="add" data-name="Бургер «Формула»" data-price="249">+ в чек</button></div>
+        </div>
+      </article>
+      <ul class="rows">
+        <li><span class="rd-name">Бейгл с лососем</span><span class="leader"></span><span class="price">319 ₽</span><button class="add" data-name="Бейгл с лососем" data-price="319">+</button></li>
+        <li><span class="rd-name">Буррито с курицей</span><span class="leader"></span><span class="price">259 ₽</span><button class="add" data-name="Буррито с курицей" data-price="259">+</button></li>
+        <li><span class="rd-name">Пита с фалафелем</span><span class="leader"></span><span class="price">229 ₽</span><button class="add" data-name="Пита с фалафелем" data-price="229">+</button></li>
+        <li><span class="rd-name">Чиабатта с ростбифом</span><span class="leader"></span><span class="price">289 ₽</span><button class="add" data-name="Чиабатта с ростбифом" data-price="289">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 02 СЭНДВИЧИ ======== -->
+    <section class="cat" id="sandwiches">
+      <header class="cat-head"><span class="cat-num">02</span><h2>Сэндвичи</h2><span class="cnt">3 позиции</span></header>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/sandwich.jpg" alt="Клаб-сэндвич с курицей и фри" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Клаб-сэндвич с курицей</h3>
+          <p>Три слоя тостового хлеба, курица, бекон, томаты, айсберг, соус клаб.</p>
+          <div class="dish-row"><span class="price">259 ₽</span><button class="add" data-name="Клаб-сэндвич с курицей" data-price="259">+ в чек</button></div>
+        </div>
+      </article>
+      <ul class="rows">
+        <li><span class="rd-name">Сэндвич с тунцом</span><span class="leader"></span><span class="price">219 ₽</span><button class="add" data-name="Сэндвич с тунцом" data-price="219">+</button></li>
+        <li><span class="rd-name">Крок-мадам с ветчиной</span><span class="leader"></span><span class="price">239 ₽</span><button class="add" data-name="Крок-мадам с ветчиной" data-price="239">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 03 ПИЦЦА-МИНИ · ХОТ-ДОГИ · ВЫПЕЧКА ======== -->
+    <section class="cat" id="pizza">
+      <header class="cat-head"><span class="cat-num">03</span><h2>Пицца-мини · хот-доги · выпечка</h2><span class="cnt">4 позиции</span></header>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/pizza.jpg" alt="Пицца-мини пепперони" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Пицца-мини пепперони</h3>
+          <p>Томатный соус, моцарелла, двойная пепперони. 20 см — как раз на одного.</p>
+          <div class="dish-row"><span class="price">199 ₽</span><button class="add" data-name="Пицца-мини пепперони" data-price="199">+ в чек</button></div>
+        </div>
+      </article>
+      <ul class="rows">
+        <li><span class="rd-name">Пицца-мини четыре сыра</span><span class="leader"></span><span class="price">209 ₽</span><button class="add" data-name="Пицца-мини четыре сыра" data-price="209">+</button></li>
+        <li><span class="rd-name">Хот-дог датский</span><span class="leader"></span><span class="price">159 ₽</span><button class="add" data-name="Хот-дог датский" data-price="159">+</button></li>
+        <li><span class="rd-name">Улитка с корицей</span><span class="leader"></span><span class="price">109 ₽</span><button class="add" data-name="Улитка с корицей" data-price="109">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 04 ВТОРЫЕ БЛЮДА ======== -->
+    <section class="cat" id="mains">
+      <header class="cat-head"><span class="cat-num">04</span><h2>Вторые блюда с гарниром</h2><span class="cnt">3 позиции</span></header>
+      <ul class="rows">
+        <li><span class="rd-name">Котлета по-домашнему с пюре</span><span class="leader"></span><span class="price">219 ₽</span><button class="add" data-name="Котлета с пюре" data-price="219">+</button></li>
+        <li><span class="rd-name">Курица терияки с рисом</span><span class="leader"></span><span class="price">249 ₽</span><button class="add" data-name="Курица терияки с рисом" data-price="249">+</button></li>
+        <li><span class="rd-name">Паста болоньезе</span><span class="leader"></span><span class="price">239 ₽</span><button class="add" data-name="Паста болоньезе" data-price="239">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 05 СУПЫ ======== -->
+    <section class="cat" id="soups">
+      <header class="cat-head"><span class="cat-num">05</span><h2>Супы</h2><span class="cnt">3 позиции</span></header>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/soup.jpg" alt="Суп дня в белой миске" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Суп дня</h3>
+          <p>Каждый день новый: борщ, харчо, тыквенный крем. Сегодняшний — у кассы.</p>
+          <div class="dish-row"><span class="price">149 ₽</span><button class="add" data-name="Суп дня" data-price="149">+ в чек</button></div>
+        </div>
+      </article>
+      <ul class="rows">
+        <li><span class="rd-name">Куриная лапша</span><span class="leader"></span><span class="price">169 ₽</span><button class="add" data-name="Куриная лапша" data-price="169">+</button></li>
+        <li><span class="rd-name">Крем-суп грибной</span><span class="leader"></span><span class="price">179 ₽</span><button class="add" data-name="Крем-суп грибной" data-price="179">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 06 САЛАТЫ ======== -->
+    <section class="cat" id="salads">
+      <header class="cat-head"><span class="cat-num">06</span><h2>Салаты</h2><span class="cnt">3 позиции</span></header>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/salad.jpg" alt="Салат цезарь в деревянной миске" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Цезарь с курицей</h3>
+          <p>Ромэн, курица гриль, пармезан, гренки, классическая заправка.</p>
+          <div class="dish-row"><span class="price">229 ₽</span><button class="add" data-name="Цезарь с курицей" data-price="229">+ в чек</button></div>
+        </div>
+      </article>
+      <ul class="rows">
+        <li><span class="rd-name">Греческий</span><span class="leader"></span><span class="price">209 ₽</span><button class="add" data-name="Греческий салат" data-price="209">+</button></li>
+        <li><span class="rd-name">Салат с тунцом</span><span class="leader"></span><span class="price">249 ₽</span><button class="add" data-name="Салат с тунцом" data-price="249">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 07 ХАЛЯЛЬ ======== -->
+    <section class="cat" id="halal">
+      <header class="cat-head"><span class="cat-num">07</span><h2>Халяль</h2><span class="cnt">3 позиции</span></header>
+      <ul class="rows">
+        <li><span class="rd-name">Шаурма халяль</span><span class="leader"></span><span class="price">279 ₽</span><button class="add" data-name="Шаурма халяль" data-price="279">+</button></li>
+        <li><span class="rd-name">Плов с курицей халяль</span><span class="leader"></span><span class="price">259 ₽</span><button class="add" data-name="Плов с курицей халяль" data-price="259">+</button></li>
+        <li><span class="rd-name">Люля-кебаб с булгуром</span><span class="leader"></span><span class="price">289 ₽</span><button class="add" data-name="Люля-кебаб с булгуром" data-price="289">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 08 ДЕСЕРТЫ · КУКИС ======== -->
+    <section class="cat" id="desserts">
+      <header class="cat-head"><span class="cat-num">08</span><h2>Десерты · кукис</h2><span class="cnt">3 позиции</span></header>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/cookies.jpg" alt="Кукис двойной шоколад" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Кукис двойной шоколад</h3>
+          <p>Печём в кафе каждое утро. Тёплый, если успеешь до обеда.</p>
+          <div class="dish-row"><span class="price">89 ₽</span><button class="add" data-name="Кукис двойной шоколад" data-price="89">+ в чек</button></div>
+        </div>
+      </article>
+      <ul class="rows">
+        <li><span class="rd-name">Чизкейк нью-йорк</span><span class="leader"></span><span class="price">159 ₽</span><button class="add" data-name="Чизкейк нью-йорк" data-price="159">+</button></li>
+        <li><span class="rd-name">Брауни</span><span class="leader"></span><span class="price">129 ₽</span><button class="add" data-name="Брауни" data-price="129">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== 09 НАПИТКИ ======== -->
+    <section class="cat" id="drinks">
+      <header class="cat-head"><span class="cat-num">09</span><h2>Напитки</h2><span class="cnt">4 позиции</span></header>
+      <article class="dish">
+        <div class="thumb"><img src="./assets/coffee.jpg" alt="Капучино" loading="lazy" width="104" height="104"></div>
+        <div class="dish-body">
+          <h3>Капучино</h3>
+          <p>Зерно свежей обжарки, молоко 3,2%. Довезём горячим — стакан с двойной стенкой.</p>
+          <div class="dish-row"><span class="price">139 ₽</span><button class="add" data-name="Капучино" data-price="139">+ в чек</button></div>
+        </div>
+      </article>
+      <ul class="rows">
+        <li><span class="rd-name">Морс облепиховый</span><span class="leader"></span><span class="price">119 ₽</span><button class="add" data-name="Морс облепиховый" data-price="119">+</button></li>
+        <li><span class="rd-name">Латте</span><span class="leader"></span><span class="price">159 ₽</span><button class="add" data-name="Латте" data-price="159">+</button></li>
+        <li><span class="rd-name">Чай с облепихой</span><span class="leader"></span><span class="price">129 ₽</span><button class="add" data-name="Чай с облепихой" data-price="129">+</button></li>
+      </ul>
+    </section>
+
+    <!-- ======== ПАМЯТКА ПО ФОРМУЛАМ ======== -->
+    <section class="memo" aria-label="Правила бонусной программы">
+      <h2>Формулы — <i>наш кэшбэк</i></h2>
+      <ul>
+        <li><b>+7%</b><span>от каждого заказа начисляется формулами на следующий день. 1 формула = 1 ₽.</span></li>
+        <li><b>до 25%</b><span>заказа можно оплатить формулами — отметь строку «списать формулы» в чеке.</span></li>
+        <li><b>1-го числа</b><span>каждого месяца неиспользованные формулы сгорают. С 27-го напомним баннером.</span></li>
+      </ul>
+    </section>
+
+    <footer>
+      <b>ФОРМУЛА ЕДЫ</b>
+      <span>Кафе: Кочновский проезд, 7к1, этаж 1 · ежедневно 09:00–23:00</span>
+      <span>Доставка до комнаты — корпуса №1 и №2 общежития МАДИ</span>
+      <span>Кабинет: вход по телефону + код из SMS</span>
+      <span>* конец ленты * спасибо, что свои *</span>
+    </footer>
+  </main>
+
+  <!-- ================= ПРАВАЯ КОЛОНКА: ЧЕК ================= -->
+  <aside class="receipt-col" id="receiptCol" aria-label="Ваш заказ — чек">
+    <div class="receipt" id="receipt">
+      <button class="receipt-close" id="receiptClose" type="button">закрыть чек ×</button>
+
+      <header>
+        <span class="r-logo p" style="--i:0">Формула Еды</span>
+        <p class="r-meta p" style="--i:1">Касса 01 · Кочновский пр., 7к1</p>
+        <p class="r-meta p" style="--i:2">ежедневно 09:00–23:00</p>
+        <p class="r-meta p" style="--i:3">Чек № 0847 · <span id="rDate">—</span></p>
+      </header>
+
+      <hr class="r-sep p" style="--i:4">
+
+      <div id="rItems" aria-live="polite"></div>
+
+      <hr class="r-sep p" style="--i:8">
+
+      <div class="r-svc p" style="--i:9">
+        <span>Приборы</span><span class="leader"></span>
+        <span class="qc">
+          <button class="qbtn" id="cutMinus" aria-label="Меньше приборов">−</button>
+          <span id="cutCount">1</span>
+          <button class="qbtn" id="cutPlus" aria-label="Больше приборов">+</button>
+        </span>
+      </div>
+
+      <div class="r-svc p" style="--i:10">
+        <button class="chk" id="bonusToggle" aria-pressed="false">
+          <span class="box" id="bonusBox">[ ]</span>
+          <span>Списать формулы · есть <b id="bonusBal">134</b></span>
+        </button>
+        <span class="leader"></span>
+        <span class="r-disc" id="bonusOff" hidden>−0 ₽</span>
+      </div>
+      <span class="r-svc hint p" style="--i:11">формулами можно оплатить до 25% заказа</span>
+
+      <hr class="r-sep p" style="--i:12">
+
+      <div class="r-totzone">
+        <div class="r-total p" style="--i:13">
+          <span>Итого</span><span class="leader"></span><span id="rTotal">0 ₽</span>
+        </div>
+        <p class="r-accrue p" style="--i:14">завтра начислится <b id="rAccrue">+0 формул</b></p>
+        <div class="stamp" id="stamp" aria-hidden="true"><b>+7% формул</b><span>завтра на счёт</span></div>
+      </div>
+
+      <div class="r-dlv p" style="--i:15">
+        <div class="dlv-tabs" role="group" aria-label="Способ получения">
+          <button type="button" class="on" id="dlvRoom">В комнату</button>
+          <button type="button" id="dlvSelf">Самовывоз</button>
+        </div>
+        <div class="dlv-fields">
+          <label>Корпус<input type="text" inputmode="numeric" value="1" maxlength="1" aria-label="Корпус"></label>
+          <label>Этаж<input type="text" inputmode="numeric" value="4" maxlength="2" aria-label="Этаж"></label>
+          <label>Комната<input type="text" inputmode="numeric" value="412" maxlength="4" aria-label="Комната"></label>
+        </div>
+        <p class="dlv-pickup">Заберёшь сам: Кочновский проезд, 7к1, этаж 1. Соберём к твоему приходу.</p>
+      </div>
+
+      <button class="pay p" style="--i:16" id="payBtn">Оплатить <span id="payTotal">0 ₽</span> и оформить</button>
+
+      <div class="barcode p" style="--i:17" aria-hidden="true"></div>
+      <p class="bc-num p" style="--i:17" aria-hidden="true">4 607 084 700 305</p>
+      <p class="r-thanks p" style="--i:18">* спасибо, что свои *</p>
+    </div>
+  </aside>
+</div>
+
+<!-- ================= МОБИЛЬНАЯ ПОЛОСА-ЧЕК ================= -->
+<button class="cartbar" id="cartbar" type="button" aria-label="Открыть чек">
+  <span class="cb-sum">Итог <span id="cbTotal">0 ₽</span></span>
+  <span class="cb-open">открыть чек ▴</span>
+</button>
+
+<script>
+(function(){
+  'use strict';
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var RUB = ' ₽'; // неразрывный пробел + ₽
+
+  /* ---------- состояние ---------- */
+  var cart = [
+    {name:'Шаурма классик', price:269, qty:1},
+    {name:'Морс облепиховый', price:119, qty:1}
+  ];
+  var cutlery = 1;
+  var bonusBalance = 134;
+  var bonusOn = false;
+  var shownTotal = 0; // для count-up
+
+  /* ---------- элементы ---------- */
+  var $ = function(id){ return document.getElementById(id); };
+  var rItems = $('rItems'), rTotal = $('rTotal'), rAccrue = $('rAccrue'),
+      payBtn = $('payBtn'), payTotal = $('payTotal'), receipt = $('receipt'),
+      cartbar = $('cartbar'), cbTotal = $('cbTotal'), stamp = $('stamp'),
+      bonusOff = $('bonusOff'), bonusBox = $('bonusBox');
+
+  $('rDate').textContent = (function(){
+    var d = new Date(), p = function(n){ return (n<10?'0':'')+n; };
+    return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());
+  })();
+
+  /* ---------- рендер строк чека ---------- */
+  function lineEl(item){
+    var row = document.createElement('div');
+    row.className = 'r-line';
+    row.setAttribute('data-name', item.name);
+    row.innerHTML =
+      '<span class="nm">'+item.name+'</span>' +
+      '<span class="qc">' +
+        '<button class="qbtn" data-d="-1" aria-label="Убрать одну">−</button>' +
+        '<span class="q">'+item.qty+'</span>' +
+        '<button class="qbtn" data-d="1" aria-label="Добавить одну">+</button>' +
+      '</span>' +
+      '<span class="leader"></span>' +
+      '<span class="sum">'+(item.price*item.qty)+RUB+'</span>';
+    return row;
+  }
+
+  function renderAll(initial){
+    rItems.innerHTML = '';
+    if(!cart.length){
+      var e = document.createElement('p');
+      e.className = 'r-empty p-now';
+      e.textContent = '— чек пуст · добавь что-нибудь —';
+      rItems.appendChild(e);
+      return;
+    }
+    cart.forEach(function(item, i){
+      var row = lineEl(item);
+      if(initial){ row.classList.add('p'); row.style.setProperty('--i', 5 + i); }
+      rItems.appendChild(row);
+    });
+  }
+
+  /* ---------- суммы ---------- */
+  function totals(){
+    var sum = cart.reduce(function(s,i){ return s + i.price*i.qty; }, 0);
+    var disc = bonusOn ? Math.min(bonusBalance, Math.floor(sum*0.25)) : 0;
+    return { sum:sum, disc:disc, pay:Math.max(0, sum-disc) };
+  }
+
+  function countTo(to){
+    var from = shownTotal;
+    shownTotal = to;
+    var apply = function(v){
+      var t = v + RUB;
+      rTotal.textContent = t; payTotal.textContent = t; cbTotal.textContent = t;
+    };
+    if(reduce || from === to){ apply(to); return; }
+    var t0 = null, dur = 600;
+    requestAnimationFrame(function step(ts){
+      t0 = t0 || ts;
+      var p = Math.min((ts-t0)/dur, 1), ease = 1 - Math.pow(1-p, 3);
+      apply(Math.round(from + (to-from)*ease));
+      if(p < 1) requestAnimationFrame(step);
+    });
+  }
+
+  function refreshTotals(){
+    var t = totals();
+    if(bonusOn && t.disc > 0){
+      bonusOff.hidden = false;
+      bonusOff.textContent = '−' + t.disc + RUB;
+    } else {
+      bonusOff.hidden = true;
+    }
+    countTo(t.pay);
+    rAccrue.textContent = '+' + Math.round(t.pay*0.07) + ' формул';
+  }
+
+  /* ---------- дёрганье печатающей головки ---------- */
+  function jolt(el){
+    if(reduce) return;
+    el.classList.remove('jolt');
+    void el.offsetWidth; // перезапуск анимации
+    el.classList.add('jolt');
+  }
+
+  /* ---------- операции с корзиной ---------- */
+  function printRow(item){
+    var old = rItems.querySelector('[data-name="'+item.name.replace(/"/g,'\\"')+'"]');
+    var empty = rItems.querySelector('.r-empty');
+    if(empty) empty.remove();
+    var row = lineEl(item);
+    row.classList.add('p-now');
+    if(old) rItems.replaceChild(row, old); else rItems.appendChild(row);
+  }
+
+  function addItem(name, price){
+    var item = cart.find(function(i){ return i.name === name; });
+    if(item){ item.qty++; } else { item = {name:name, price:price, qty:1}; cart.push(item); }
+    printRow(item);
+    jolt(receipt); jolt(cartbar);
+    refreshTotals();
+  }
+
+  function changeQty(name, d){
+    var idx = cart.findIndex(function(i){ return i.name === name; });
+    if(idx < 0) return;
+    cart[idx].qty += d;
+    if(cart[idx].qty <= 0){
+      var row = rItems.querySelector('[data-name="'+name.replace(/"/g,'\\"')+'"]');
+      if(row) row.remove();
+      cart.splice(idx, 1);
+      if(!cart.length) renderAll(false);
+    } else {
+      printRow(cart[idx]);
+    }
+    jolt(receipt);
+    refreshTotals();
+  }
+
+  /* кнопки «в чек» в меню */
+  document.querySelectorAll('.add').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      addItem(btn.dataset.name, +btn.dataset.price);
+      btn.classList.add('added');
+      var was = btn.textContent;
+      btn.textContent = was.length > 2 ? 'в чеке' : '✓';
+      setTimeout(function(){ btn.classList.remove('added'); btn.textContent = was; }, 900);
+    });
+  });
+
+  /* +/− внутри чека (делегирование) */
+  rItems.addEventListener('click', function(e){
+    var b = e.target.closest('.qbtn');
+    if(!b) return;
+    changeQty(b.closest('.r-line').getAttribute('data-name'), +b.dataset.d);
+  });
+
+  /* приборы */
+  $('cutMinus').addEventListener('click', function(){ if(cutlery>0){ cutlery--; $('cutCount').textContent = cutlery; jolt(receipt); } });
+  $('cutPlus').addEventListener('click', function(){ if(cutlery<9){ cutlery++; $('cutCount').textContent = cutlery; jolt(receipt); } });
+
+  /* списание формул */
+  $('bonusToggle').addEventListener('click', function(){
+    bonusOn = !bonusOn;
+    bonusBox.textContent = bonusOn ? '[x]' : '[ ]';
+    this.setAttribute('aria-pressed', bonusOn);
+    jolt(receipt);
+    refreshTotals();
+  });
+
+  /* способ получения */
+  $('dlvRoom').addEventListener('click', function(){
+    receipt.classList.remove('pickup');
+    this.classList.add('on'); $('dlvSelf').classList.remove('on');
+  });
+  $('dlvSelf').addEventListener('click', function(){
+    receipt.classList.add('pickup');
+    this.classList.add('on'); $('dlvRoom').classList.remove('on');
+  });
+
+  /* оплата (прототип) */
+  payBtn.addEventListener('click', function(){
+    jolt(receipt);
+    stamp.classList.remove('on');
+    void stamp.offsetWidth;
+    stamp.classList.add('on');
+    var html = payBtn.innerHTML;
+    payBtn.textContent = 'Печатаем чек…';
+    setTimeout(function(){ payBtn.innerHTML = html; refreshTotals(); }, 1100);
+  });
+
+  /* ---------- мобильный чек ---------- */
+  function openCart(){ document.body.classList.add('cart-open'); }
+  function closeCart(){ document.body.classList.remove('cart-open'); }
+  cartbar.addEventListener('click', openCart);
+  $('receiptClose').addEventListener('click', closeCart);
+  $('receiptCol').addEventListener('click', function(e){ if(e.target === this) closeCart(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeCart(); cabPanel.classList.remove('open'); } });
+
+  /* ---------- кабинет ---------- */
+  var cabBtn = $('cabBtn'), cabPanel = $('cabPanel');
+  cabBtn.addEventListener('click', function(){
+    var open = cabPanel.classList.toggle('open');
+    cabBtn.setAttribute('aria-expanded', open);
+    if(open) $('cabPhone').focus();
+  });
+
+  /* ---------- scroll-spy для топ-навигации ---------- */
+  var links = document.querySelectorAll('#topnav a');
+  if('IntersectionObserver' in window){
+    var spy = new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        if(!en.isIntersecting) return;
+        links.forEach(function(a){
+          a.classList.toggle('active', a.getAttribute('href') === '#'+en.target.id);
+        });
+      });
+    }, { rootMargin:'-30% 0px -60% 0px' });
+    document.querySelectorAll('.cat').forEach(function(s){ spy.observe(s); });
+  }
+
+  /* ---------- стартовая печать чека ---------- */
+  renderAll(true);
+  if(reduce){
+    refreshTotals();
+    stamp.classList.add('on');
+  } else {
+    /* итог печатается после строк, штамп — ударом в конце */
+    setTimeout(refreshTotals, 1350);
+    setTimeout(function(){ stamp.classList.add('on'); }, 2050);
+  }
+})();
+</script>
+</body>
+</html>

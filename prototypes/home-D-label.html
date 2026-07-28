@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Формула Еды — честная еда до твоей комнаты · МАДИ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,800;1,400;1,800&family=JetBrains+Mono:wght@400;500;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   «ФЕРМЕРСКАЯ ЭТИКЕТКА» — журнальная вёрстка про честную еду
+   крафт-бумага · печати · наклейки · маркировка
+   ============================================================ */
+:root{
+  --kraft:#e8dcc8;
+  --cream:#f6f1e6;
+  --olive:#5a682d;
+  --olive-deep:#454f22;
+  --ink:#26290f;
+  --stamp:#c0492f;
+  --hairline:rgba(38,41,15,.22);
+  --hairline-soft:rgba(38,41,15,.12);
+  --serif:'Alegreya',Georgia,serif;
+  --sans:'Onest',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+section[id]{scroll-margin-top:70px}
+body{
+  font-family:var(--sans);
+  background:var(--cream);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.55;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* бумажное зерно поверх всего */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:900;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+::selection{background:var(--olive);color:var(--cream)}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+
+.mono{font-family:var(--mono)}
+.wrap{width:100%;max-width:1360px;margin:0 auto;padding:0 20px}
+
+/* ---------- маркировочные лейблы ---------- */
+.tag{
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+}
+.tag--dim{opacity:.62}
+
+/* ---------- reveal-on-scroll ---------- */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .8s cubic-bezier(.22,.61,.36,1),transform .8s cubic-bezier(.22,.61,.36,1)}
+.reveal.visible{opacity:1;transform:none}
+.reveal[data-d="1"]{transition-delay:.12s}
+.reveal[data-d="2"]{transition-delay:.24s}
+.reveal[data-d="3"]{transition-delay:.36s}
+
+/* ============ ШАПКА ============ */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(246,241,230,.92);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--hairline);
+}
+.hd{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
+.hd__brand{display:flex;align-items:center;gap:12px;min-width:0}
+.hd__brand img{width:42px;height:42px;border-radius:50%;box-shadow:0 1px 4px rgba(38,41,15,.25)}
+.hd__name{font-family:var(--serif);font-weight:800;font-size:19px;letter-spacing:.01em;line-height:1.05;white-space:nowrap}
+.hd__name em{font-style:italic;font-weight:400}
+.hd__meta{display:none}
+.hd__nav{display:none;gap:26px}
+.hd__nav a{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;padding:4px 0;border-bottom:2px solid transparent;transition:border-color .25s,color .25s}
+.hd__nav a:hover{border-color:var(--olive);color:var(--olive)}
+.hd__cab{
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  background:none;border:1.5px solid var(--ink);color:var(--ink);
+  padding:9px 16px;border-radius:3px;transition:background .25s,color .25s;
+  white-space:nowrap;
+}
+.hd__cab:hover{background:var(--ink);color:var(--cream)}
+
+/* ============ HERO — редакционный сплит ============ */
+.hero{
+  position:relative;
+  background:
+    radial-gradient(140% 90% at 85% -10%, rgba(90,104,45,.10), transparent 55%),
+    var(--kraft);
+  border-bottom:1px solid var(--hairline);
+  overflow:hidden;
+  padding:44px 0 72px;
+}
+/* тонкая линованная сетка, как на упаковочной бумаге */
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--hairline-soft) 1px,transparent 1px);
+  background-size:100% 88px;
+}
+.hero__grid{position:relative;display:grid;gap:44px}
+.hero__label-row{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding-bottom:16px;border-bottom:1px solid var(--hairline);margin-bottom:28px;
+}
+.hero__label-row .dot{width:5px;height:5px;border-radius:50%;background:var(--stamp);flex:none}
+.hero h1{
+  font-family:var(--serif);
+  font-weight:400;
+  font-size:clamp(42px,11vw,58px);
+  line-height:.98;
+  letter-spacing:-.015em;
+  text-wrap:balance;
+}
+.hero h1 b{font-weight:800}
+.hero h1 em{font-style:italic;font-weight:800;color:var(--olive)}
+.hero__sub{
+  max-width:44ch;margin-top:24px;font-size:16px;line-height:1.65;color:rgba(38,41,15,.82);
+}
+/* спецификация продукта — моноширинная «маркировка» */
+.spec{
+  margin-top:32px;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+}
+.spec div{
+  display:flex;justify-content:space-between;gap:16px;
+  padding:9px 2px;font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+}
+.spec div + div{border-top:1px dashed var(--hairline-soft)}
+.spec span:first-child{opacity:.6}
+.spec span:last-child{font-weight:700;text-align:right}
+.hero__cta{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn-main{
+  font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--olive);color:var(--cream);border:1.5px solid var(--olive-deep);
+  padding:17px 30px;border-radius:3px;
+  box-shadow:3px 3px 0 var(--olive-deep);
+  transition:transform .2s,box-shadow .2s;
+}
+.btn-main:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--olive-deep)}
+.btn-main:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--olive-deep)}
+.btn-ghost{
+  font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  background:none;border:none;color:var(--ink);padding:16px 6px;
+  border-bottom:1.5px solid var(--ink);border-radius:0;
+  transition:color .25s,border-color .25s;
+}
+.btn-ghost:hover{color:var(--stamp);border-color:var(--stamp)}
+
+/* фото в рамке-«этикетке» */
+.hero__photo{position:relative;max-width:560px;justify-self:center;width:100%}
+.frame{
+  position:relative;
+  background:var(--cream);
+  padding:14px 14px 0;
+  border:1px solid var(--hairline);
+  box-shadow:0 18px 40px -18px rgba(38,41,15,.4),0 2px 8px rgba(38,41,15,.12);
+  transform:rotate(1.4deg);
+}
+.frame__strip{
+  display:flex;justify-content:space-between;gap:12px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  padding:0 2px 12px;color:rgba(38,41,15,.7);
+}
+.frame__img{
+  overflow:hidden;aspect-ratio:4/3.4;background:var(--olive-deep);
+  border:1px solid var(--hairline);
+}
+.frame__img img{
+  width:100%;height:100%;object-fit:cover;will-change:transform;
+  animation:kenburns 26s ease-in-out infinite alternate;
+}
+@keyframes kenburns{
+  from{transform:scale(1.06) translate(0,0)}
+  to{transform:scale(1.2) translate(-2.4%,-3%)}
+}
+.frame__caption{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:12px 2px 14px;
+  border-top:1px dashed var(--hairline);margin-top:14px;
+}
+.frame__caption .name{font-family:var(--serif);font-style:italic;font-size:16px}
+.frame__caption .price{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;white-space:nowrap}
+
+/* наклейки-стикеры на упаковке */
+.sticker{
+  position:absolute;z-index:5;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:11px 16px;border-radius:40px;
+  box-shadow:0 6px 14px -4px rgba(38,41,15,.35),inset 0 0 0 1px rgba(38,41,15,.14);
+  white-space:nowrap;
+}
+.sticker--olive{background:var(--olive);color:var(--cream);transform:rotate(-7deg)}
+.sticker--cream{background:var(--cream);color:var(--ink);border:1.5px dashed var(--ink);transform:rotate(4deg)}
+.sticker--s1{left:-8px;bottom:52px}
+.sticker--s2{right:-6px;bottom:-14px}
+/* круглая печать на углу фото */
+.seal{
+  position:absolute;top:-26px;right:-14px;width:96px;height:96px;z-index:6;
+  transform:rotate(12deg);filter:drop-shadow(0 4px 8px rgba(38,41,15,.25));
+  animation:sealspin 40s linear infinite;
+}
+@keyframes sealspin{to{transform:rotate(372deg)}}
+.seal text{font-family:var(--mono);font-size:10.2px;font-weight:700;letter-spacing:.22em;fill:var(--stamp)}
+.seal .mid{font-family:var(--serif);font-style:italic;font-size:15px;font-weight:800;letter-spacing:.02em}
+
+/* ============ СЕКЦИЯ 02 — МАНИФЕСТ «СОСТАВ» ============ */
+.manif{
+  position:relative;overflow:hidden;
+  background:
+    linear-gradient(180deg, rgba(90,104,45,.055), transparent 30%),
+    var(--cream);
+  padding:96px 0 110px;
+  border-bottom:1px solid var(--hairline);
+}
+/* параллакс-слои */
+.manif__ghost{
+  position:absolute;top:8%;left:-2%;z-index:0;pointer-events:none;
+  font-family:var(--serif);font-weight:800;font-style:italic;
+  font-size:clamp(120px,26vw,340px);line-height:1;letter-spacing:-.02em;
+  color:transparent;-webkit-text-stroke:1.5px rgba(90,104,45,.16);
+  white-space:nowrap;will-change:transform;
+}
+.manif__texture{
+  position:absolute;inset:-15% 0;z-index:0;pointer-events:none;opacity:.55;will-change:transform;
+  background-image:
+    radial-gradient(rgba(38,41,15,.12) 1px,transparent 1.5px);
+  background-size:26px 26px;
+  -webkit-mask-image:radial-gradient(70% 60% at 70% 40%,#000,transparent 75%);
+  mask-image:radial-gradient(70% 60% at 70% 40%,#000,transparent 75%);
+}
+.manif__inner{position:relative;z-index:2}
+.manif__head{margin-bottom:22px}
+.manif h2{
+  font-family:var(--serif);font-weight:400;font-size:clamp(34px,8vw,44px);line-height:1.05;
+  margin-top:14px;text-wrap:balance;
+}
+.manif h2 b{font-weight:800}
+.manif h2 em{font-style:italic;color:var(--olive)}
+.manif__lead{max-width:52ch;margin-top:18px;color:rgba(38,41,15,.78)}
+
+/* строки состава */
+.row{
+  display:grid;gap:10px;
+  padding:36px 0;border-top:1px solid var(--hairline);
+  grid-template-columns:1fr;
+}
+.row:last-of-type{border-bottom:1px solid var(--hairline)}
+.row__no{
+  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--stamp);
+}
+.row__body h3{font-family:var(--sans);font-weight:700;font-size:19px;letter-spacing:-.01em}
+.row__body p{margin-top:8px;max-width:46ch;color:rgba(38,41,15,.78);font-size:15px}
+.row__num{
+  position:relative;
+  font-family:var(--serif);font-style:italic;font-weight:800;
+  font-size:clamp(72px,17vw,120px);line-height:.9;letter-spacing:-.03em;
+  color:var(--ink);white-space:nowrap;
+  justify-self:start;align-self:center;
+  padding:14px 8px;
+}
+.row__num small{font-size:.34em;font-weight:800;letter-spacing:0;vertical-align:.22em;margin-left:.08em}
+.row__num .unit{font-size:.3em;font-style:italic;font-weight:400;letter-spacing:0}
+/* прорисовка круга-печати вокруг 7% */
+.stampcircle{
+  position:absolute;inset:-14px -22px;width:calc(100% + 44px);height:calc(100% + 28px);
+  pointer-events:none;overflow:visible;
+}
+.stampcircle ellipse{
+  fill:none;stroke:var(--stamp);stroke-width:2.5;
+  stroke-dasharray:640;stroke-dashoffset:640;
+  transform:rotate(-4deg);transform-origin:center;
+}
+.drawn .stampcircle ellipse{transition:stroke-dashoffset 1.4s cubic-bezier(.65,0,.35,1) .35s;stroke-dashoffset:0}
+.drawn .stampcircle .e2{transition-delay:.65s}
+.stampcircle .e2{stroke-width:1;opacity:.6}
+
+.manif__note{
+  margin-top:34px;display:inline-flex;align-items:flex-start;gap:12px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;line-height:1.7;
+  border:1.5px dashed var(--stamp);color:var(--stamp);
+  padding:14px 18px;border-radius:3px;max-width:60ch;
+  background:rgba(192,73,47,.05);
+  transform:rotate(-.5deg);
+}
+.manif__note b{letter-spacing:.12em}
+
+/* ============ СЕКЦИЯ 03 — МЕНЮ-ВИТРИНА ============ */
+.menu{position:relative;background:var(--kraft);padding:90px 0 40px;border-bottom:1px solid var(--hairline)}
+.menu__head{display:flex;flex-direction:column;gap:18px;margin-bottom:14px}
+.menu h2{font-family:var(--serif);font-weight:400;font-size:clamp(34px,8vw,44px);line-height:1.05}
+.menu h2 b{font-weight:800}
+.menu h2 em{font-style:italic;color:var(--olive)}
+/* рейка категорий */
+.cats{
+  display:flex;gap:10px;overflow-x:auto;padding:18px 2px 22px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  border-top:1px solid var(--hairline);
+  margin-top:10px;
+}
+.cats::-webkit-scrollbar{display:none}
+.cats span{
+  flex:none;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--hairline);border-radius:30px;padding:8px 14px;color:rgba(38,41,15,.8);
+  background:var(--cream);transition:background .25s,color .25s,border-color .25s;cursor:pointer;
+}
+.cats span:hover,.cats span.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+
+/* асимметричная журнальная сетка */
+.mgrid{display:grid;gap:18px;grid-template-columns:1fr}
+.mcol{display:contents}
+.card{
+  position:relative;background:var(--cream);border:1px solid var(--hairline);
+  box-shadow:0 2px 10px rgba(38,41,15,.07);
+  display:flex;flex-direction:column;
+  transition:transform .3s cubic-bezier(.22,.61,.36,1),box-shadow .3s;
+}
+.card:hover{transform:translateY(-4px);box-shadow:0 16px 32px -14px rgba(38,41,15,.3)}
+.card__ph{position:relative;overflow:hidden;background:var(--olive-deep)}
+.card__ph img{
+  width:100%;height:100%;object-fit:cover;
+  filter:grayscale(.8) contrast(1.05) brightness(1.02);
+  transition:filter .55s ease,transform .55s ease;
+}
+.card__ph::after{
+  content:'';position:absolute;inset:0;background:var(--olive);
+  mix-blend-mode:color;opacity:.72;transition:opacity .55s ease;pointer-events:none;
+}
+.card:hover .card__ph img{filter:none;transform:scale(1.04)}
+.card:hover .card__ph::after{opacity:0}
+.card__ph .cat-mark{
+  position:absolute;top:12px;left:12px;z-index:3;
+  font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  background:var(--cream);color:var(--ink);padding:6px 10px;border-radius:2px;
+  box-shadow:0 2px 6px rgba(38,41,15,.3);transform:rotate(-2deg);
+}
+.card__body{display:flex;flex-direction:column;gap:6px;padding:16px;flex:1}
+.card__name{font-family:var(--serif);font-weight:800;font-size:20px;line-height:1.12;letter-spacing:-.01em}
+.card__desc{font-size:13.5px;color:rgba(38,41,15,.68);line-height:1.5}
+.card__foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:14px}
+/* цена-«штамп» */
+.price-stamp{
+  font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.08em;
+  color:var(--stamp);border:1.5px solid var(--stamp);border-radius:3px;
+  padding:6px 10px;transform:rotate(-2.5deg);
+  box-shadow:inset 0 0 6px rgba(192,73,47,.14);
+  white-space:nowrap;
+}
+.add{
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  background:none;border:1.5px solid var(--ink);color:var(--ink);border-radius:3px;
+  padding:8px 13px;transition:background .25s,color .25s;
+}
+.add:hover{background:var(--olive);border-color:var(--olive);color:var(--cream)}
+/* большая карточка */
+.card--big .card__ph{aspect-ratio:4/3}
+.card--big .card__name{font-size:clamp(26px,5.4vw,38px);font-weight:800}
+.card--big .card__desc{font-size:15px;max-width:52ch}
+.card--big .price-stamp{font-size:16px;padding:8px 14px}
+.card--sm .card__ph{aspect-ratio:16/9}
+/* карточка-«все 9 категорий» без фото */
+.card--index{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.card--index .card__body{padding:22px 18px;gap:0}
+.card--index ol{list-style:none;counter-reset:c;margin-top:14px}
+.card--index li{
+  counter-increment:c;display:flex;gap:12px;align-items:baseline;
+  font-family:var(--serif);font-size:16.5px;font-style:italic;
+  padding:7px 0;border-bottom:1px dashed rgba(246,241,230,.2);
+}
+.card--index li::before{
+  content:counter(c,decimal-leading-zero);
+  font-family:var(--mono);font-style:normal;font-size:10px;font-weight:700;letter-spacing:.1em;
+  color:rgba(246,241,230,.55);
+}
+.card--index li:last-child{border-bottom:none}
+.card--index .tag{color:rgba(246,241,230,.6)}
+.card--index .card__name{color:var(--cream);font-weight:400;font-style:italic;font-size:22px;margin-top:8px}
+
+/* липкая полоса-чек */
+.checkbar-wrap{position:sticky;bottom:14px;z-index:80;margin-top:34px;padding-bottom:14px}
+.checkbar{
+  display:flex;align-items:center;gap:12px;justify-content:space-between;
+  background:var(--ink);color:var(--cream);
+  border-radius:6px;padding:12px 14px 12px 18px;
+  box-shadow:0 18px 40px -12px rgba(38,41,15,.55);
+  border:1px solid rgba(246,241,230,.14);
+}
+.checkbar__info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.checkbar__line{
+  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.checkbar__line .sep{opacity:.45;margin:0 6px}
+.checkbar__sub{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(246,241,230,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.checkbar__btn{
+  flex:none;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--stamp);color:var(--cream);border:none;border-radius:4px;
+  padding:13px 20px;transition:transform .2s,background .2s;
+}
+.checkbar__btn:hover{background:#a93c25;transform:translateY(-1px)}
+@media(max-width:479px){
+  .checkbar{padding:10px 10px 10px 14px;gap:10px}
+  .checkbar__line{font-size:11px}
+  .checkbar__sub{font-size:9px}
+  .checkbar__btn{padding:12px 14px;font-size:10.5px}
+}
+/* на тач-устройствах hover нет — фото «проявляется» в цвет при попадании в кадр */
+@media (hover:none){
+  .card.incolor .card__ph img{filter:none}
+  .card.incolor .card__ph::after{opacity:0}
+}
+
+/* ============ ПОДВАЛ ============ */
+footer{background:var(--cream);padding:56px 0 40px}
+.ft{display:grid;gap:28px}
+.ft__brand{display:flex;align-items:center;gap:14px}
+.ft__brand img{width:52px;height:52px;border-radius:50%}
+.ft__brand .name{font-family:var(--serif);font-weight:800;font-size:22px;line-height:1.1}
+.ft__brand .name em{display:block;font-style:italic;font-weight:400;font-size:14px;color:rgba(38,41,15,.65)}
+.ft__spec{border-top:1px solid var(--hairline)}
+.ft__spec div{
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:11px 2px;border-bottom:1px dashed var(--hairline-soft);
+}
+.ft__spec span:first-child{opacity:.55}
+.ft__spec span:last-child{font-weight:700;text-align:right}
+.ft__bottom{
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(38,41,15,.5);
+}
+
+/* ============ SCROLL-SPY РЕЙКА ============ */
+.rail{
+  position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:120;
+  display:none;flex-direction:column;gap:22px;
+}
+.rail a{
+  position:relative;display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.18em;
+  color:rgba(38,41,15,.4);transition:color .3s;
+}
+.rail a::before{
+  content:'';width:7px;height:7px;border-radius:50%;
+  border:1.5px solid rgba(38,41,15,.4);background:transparent;
+  transition:background .3s,border-color .3s,transform .3s;
+}
+.rail a:hover{color:var(--ink)}
+.rail a.active{color:var(--stamp)}
+.rail a.active::before{background:var(--stamp);border-color:var(--stamp);transform:scale(1.3)}
+.rail__label{
+  writing-mode:vertical-rl;font-family:var(--mono);font-size:9px;letter-spacing:.3em;text-transform:uppercase;
+  color:rgba(38,41,15,.35);margin-bottom:8px;align-self:center;
+}
+
+/* ============ АДАПТИВ ============ */
+@media(min-width:768px){
+  .wrap{padding:0 40px}
+  .hd{height:76px}
+  .hd__meta{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(38,41,15,.55)}
+  .hd__nav{display:flex}
+  .hero{padding:72px 0 96px}
+  .hero__grid{grid-template-columns:1.1fr .9fr;align-items:center;gap:56px}
+  .hero h1{font-size:clamp(56px,6.4vw,84px)}
+  .hero__photo{justify-self:end}
+  .rail{display:flex}
+  .row{grid-template-columns:70px 1fr auto;gap:28px;align-items:center;padding:44px 0}
+  .row__body h3{font-size:21px}
+  .mgrid{grid-template-columns:repeat(2,1fr)}
+  .card--big{grid-column:1/-1}
+  .card--big{flex-direction:row}
+  .card--big .card__ph{flex:1.25;aspect-ratio:auto;min-height:380px}
+  .card--big .card__body{flex:1;padding:30px;justify-content:center;gap:10px}
+  .checkbar__line{font-size:13px}
+  .ft{grid-template-columns:1fr 1.4fr;align-items:start}
+  .ft__bottom{grid-column:1/-1;border-top:1px solid var(--hairline);padding-top:22px;margin-top:6px}
+}
+@media(min-width:1440px){
+  .hero h1{font-size:88px}
+  .mgrid{grid-template-columns:repeat(3,1fr)}
+  .card--big{grid-column:span 2;grid-row:span 2;flex-direction:column}
+  .card--big .card__ph{flex:1;min-height:0;aspect-ratio:auto}
+  .card--big .card__body{flex:none;padding:28px 30px}
+  .manif{padding:130px 0 140px}
+  .rail{right:26px}
+}
+
+/* ============ REDUCED MOTION ============ */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .reveal{opacity:1;transform:none}
+  .stampcircle ellipse{stroke-dashoffset:0}
+  [data-plx]{transform:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ШАПКА -->
+<header>
+  <div class="wrap hd">
+    <a class="hd__brand" href="#s1">
+      <img src="./assets/logo.png" alt="Логотип «Формула Еды»" width="42" height="42">
+      <span class="hd__name">Формула&nbsp;Еды <em>· МАДИ</em></span>
+    </a>
+    <span class="hd__meta">Кочновский пр., 7к1 · 09:00–23:00</span>
+    <nav class="hd__nav">
+      <a href="#s1">Главная</a>
+      <a href="#s2">Формулы</a>
+      <a href="#s3">Меню</a>
+    </nav>
+    <button class="hd__cab" type="button">Кабинет</button>
+  </div>
+</header>
+
+<!-- SCROLL-SPY РЕЙКА -->
+<nav class="rail" aria-label="Навигация по секциям">
+  <span class="rail__label">Разделы</span>
+  <a href="#s1">01</a>
+  <a href="#s2">02</a>
+  <a href="#s3">03</a>
+</nav>
+
+<main>
+
+<!-- ================= 01 · HERO ================= -->
+<section class="hero" id="s1">
+  <div class="wrap hero__grid">
+    <div class="hero__text">
+      <div class="hero__label-row reveal">
+        <span class="tag">Продукт: горячая еда</span>
+        <span class="dot"></span>
+        <span class="tag tag--dim">Партия № сегодняшняя</span>
+        <span class="dot"></span>
+        <span class="tag tag--dim">Общежития МАДИ · корп. 1–2</span>
+      </div>
+      <h1 class="reveal" data-d="1">Честная еда —<br><b>до двери</b> <em>твоей комнаты</em></h1>
+      <p class="hero__sub reveal" data-d="2">Готовим в кафе на Кочновском проезде и привозим в общежития МАДИ — корпуса № 1 и № 2 — за 30&nbsp;минут или быстрее. Или забирай сам: первый этаж, без очереди.</p>
+      <div class="spec reveal" data-d="2">
+        <div><span>Нетто</span><span>Одна порция сытости</span></div>
+        <div><span>Состав</span><span>9 категорий меню, без пафоса</span></div>
+        <div><span>Изготовлено</span><span>Сегодня, 09:00–23:00</span></div>
+        <div><span>Хранить</span><span>Не дольше одного вечера</span></div>
+      </div>
+      <div class="hero__cta reveal" data-d="3">
+        <button class="btn-main" type="button">Собрать заказ</button>
+        <a class="btn-ghost" href="#s3">Смотреть меню</a>
+      </div>
+    </div>
+
+    <div class="hero__photo reveal" data-d="2" data-plx="-0.04">
+      <figure class="frame">
+        <figcaption class="frame__strip">
+          <span>Фото № 012 — из кафе</span>
+          <span>Formulaedi.ru</span>
+        </figcaption>
+        <div class="frame__img">
+          <img src="./assets/market.jpg" alt="Свежие овощи в корзинах на рынке" loading="eager">
+        </div>
+        <div class="frame__caption">
+          <span class="name">Овощи — с рынка, каждое утро</span>
+          <span class="price mono">поставка № 3</span>
+        </div>
+      </figure>
+      <span class="sticker sticker--olive sticker--s1">Доставка 30 мин</span>
+      <span class="sticker sticker--cream sticker--s2">+7% формулами</span>
+      <svg class="seal" viewBox="0 0 96 96" aria-hidden="true">
+        <defs><path id="cir" d="M48,48 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0"/></defs>
+        <circle cx="48" cy="48" r="45" fill="none" stroke="var(--stamp)" stroke-width="2"/>
+        <circle cx="48" cy="48" r="27" fill="none" stroke="var(--stamp)" stroke-width="1" stroke-dasharray="3 4"/>
+        <text><textPath href="#cir">МАДИ · КОРПУС 1 · КОРПУС 2 · </textPath></text>
+        <text class="mid" x="48" y="53" text-anchor="middle" fill="var(--stamp)">свои</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 02 · МАНИФЕСТ ================= -->
+<section class="manif" id="s2">
+  <div class="manif__ghost" data-plx="0.1" aria-hidden="true">Состав</div>
+  <div class="manif__texture" data-plx="0.05" aria-hidden="true"></div>
+  <div class="wrap manif__inner">
+    <div class="manif__head reveal">
+      <span class="tag">Раздел 02 · Состав предложения</span>
+      <h2><b>Формула честной еды.</b><br>Читай, как этикетку — <em>тут всё по-настоящему</em></h2>
+      <p class="manif__lead">Никаких звёздочек и мелкого шрифта. Три пункта состава — вся суть того, как мы работаем со своими.</p>
+    </div>
+
+    <div class="row reveal">
+      <span class="row__no">01 /</span>
+      <div class="row__body">
+        <h3>Кэшбэк «формулами» — с каждого заказа</h3>
+        <p>+7% от суммы заказа начисляется формулами уже завтра. Заказал сегодня на 647 ₽ — завтра на счету 45 формул. Автоматически, без промокодов.</p>
+      </div>
+      <div class="row__num" id="stamp-target"><span class="num" data-to="7">0</span><small>%</small>
+        <svg class="stampcircle" viewBox="0 0 200 140" preserveAspectRatio="none" aria-hidden="true">
+          <ellipse class="e1" cx="100" cy="70" rx="94" ry="60"/>
+          <ellipse class="e2" cx="100" cy="70" rx="86" ry="52"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="row reveal" data-d="1">
+      <span class="row__no">02 /</span>
+      <div class="row__body">
+        <h3>Формулами можно платить</h3>
+        <p>Списывай формулы на любой заказ — до 25% от чека. Копишь неделю — четверть следующего ужина за счёт заведения.</p>
+      </div>
+      <div class="row__num"><span class="num" data-to="25">0</span><small>%</small></div>
+    </div>
+
+    <div class="row reveal" data-d="2">
+      <span class="row__no">03 /</span>
+      <div class="row__body">
+        <h3>Доставка до комнаты — не до подъезда</h3>
+        <p>Корпус, этаж, номер комнаты — курьер поднимется сам. 30 минут или быстрее: кафе через дорогу, еда не успевает остыть.</p>
+      </div>
+      <div class="row__num"><span class="num" data-to="30">0</span> <span class="unit">мин</span></div>
+    </div>
+
+    <p class="manif__note reveal">
+      <b>NB:</b>&nbsp;формулы сгорают 1-го числа каждого месяца. С 27-го напомним баннером — успеешь потратить на десерт.
+    </p>
+  </div>
+</section>
+
+<!-- ================= 03 · МЕНЮ-ВИТРИНА ================= -->
+<section class="menu" id="s3">
+  <div class="wrap">
+    <div class="menu__head reveal">
+      <span class="tag">Раздел 03 · Витрина</span>
+      <h2><b>Сегодня на полке.</b> <em>Девять категорий</em> — от шаурмы до капучино</h2>
+      <div class="cats" role="list">
+        <span class="on" role="listitem">Стрит-фуд</span>
+        <span role="listitem">Сэндвичи</span>
+        <span role="listitem">Пицца-мини и выпечка</span>
+        <span role="listitem">Вторые с гарниром</span>
+        <span role="listitem">Супы</span>
+        <span role="listitem">Салаты</span>
+        <span role="listitem">Халяль</span>
+        <span role="listitem">Десерты и кукис</span>
+        <span role="listitem">Напитки</span>
+      </div>
+    </div>
+
+    <div class="mgrid">
+      <!-- большая журнальная карточка -->
+      <article class="card card--big reveal">
+        <div class="card__ph">
+          <span class="cat-mark">Стрит-фуд · хит</span>
+          <img src="./assets/burger.jpg" alt="Бургер «Формула» с картошкой фри" loading="lazy">
+        </div>
+        <div class="card__body">
+          <span class="tag tag--dim">Нетто 320 г · собран сегодня</span>
+          <h3 class="card__name">Бургер «Формула»</h3>
+          <p class="card__desc">Котлета на гриле, черёмуховая булка, соус по нашему рецепту и картошка фри в комплекте. Тот самый заказ «на вечер после пар».</p>
+          <div class="card__foot">
+            <span class="price-stamp">249 ₽</span>
+            <button class="add" type="button">В чек</button>
+          </div>
+        </div>
+      </article>
+
+      <div class="mcol">
+        <article class="card card--sm reveal" data-d="1">
+          <div class="card__ph">
+            <span class="cat-mark">Стрит-фуд</span>
+            <img src="./assets/shawarma.jpg" alt="Шаурма классик на тарелке" loading="lazy">
+          </div>
+          <div class="card__body">
+            <h3 class="card__name">Шаурма классик</h3>
+            <p class="card__desc">Курица, свежие овощи, фирменный соус, тонкий лаваш.</p>
+            <div class="card__foot">
+              <span class="price-stamp">269 ₽</span>
+              <button class="add" type="button">В чек</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card card--sm reveal" data-d="2">
+          <div class="card__ph">
+            <span class="cat-mark">Пицца-мини</span>
+            <img src="./assets/pizza.jpg" alt="Пицца-мини пепперони" loading="lazy">
+          </div>
+          <div class="card__body">
+            <h3 class="card__name">Пицца-мини пепперони</h3>
+            <p class="card__desc">Личный формат: тебе — целиком, ни с кем не делиться.</p>
+            <div class="card__foot">
+              <span class="price-stamp">199 ₽</span>
+              <button class="add" type="button">В чек</button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <article class="card card--sm reveal" data-d="1">
+        <div class="card__ph">
+          <span class="cat-mark">Салаты</span>
+          <img src="./assets/salad.jpg" alt="Салат Цезарь в деревянной миске" loading="lazy">
+        </div>
+        <div class="card__body">
+          <h3 class="card__name">Цезарь</h3>
+          <p class="card__desc">Ромэн, курица, пармезан, гренки — классика без сюрпризов.</p>
+          <div class="card__foot">
+            <span class="price-stamp">229 ₽</span>
+            <button class="add" type="button">В чек</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="card card--sm reveal" data-d="2">
+        <div class="card__ph">
+          <span class="cat-mark">Супы</span>
+          <img src="./assets/soup.jpg" alt="Суп дня в белой миске" loading="lazy">
+        </div>
+        <div class="card__body">
+          <h3 class="card__name">Суп дня</h3>
+          <p class="card__desc">Каждый день новый. Сегодня спроси у кассы — или рискни.</p>
+          <div class="card__foot">
+            <span class="price-stamp">149 ₽</span>
+            <button class="add" type="button">В чек</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="card card--sm reveal" data-d="1">
+        <div class="card__ph">
+          <span class="cat-mark">Десерты</span>
+          <img src="./assets/cookies.jpg" alt="Кукис двойной шоколад" loading="lazy">
+        </div>
+        <div class="card__body">
+          <h3 class="card__name">Кукис двойной шоколад</h3>
+          <p class="card__desc">Тёплый, если повезёт с таймингом выпечки.</p>
+          <div class="card__foot">
+            <span class="price-stamp">89 ₽</span>
+            <button class="add" type="button">В чек</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="card card--sm reveal" data-d="2">
+        <div class="card__ph">
+          <span class="cat-mark">Напитки</span>
+          <img src="./assets/coffee.jpg" alt="Капучино" loading="lazy">
+        </div>
+        <div class="card__body">
+          <h3 class="card__name">Капучино</h3>
+          <p class="card__desc">На молоке с рынка. Морс облепиховый — рядом, 119 ₽.</p>
+          <div class="card__foot">
+            <span class="price-stamp">139 ₽</span>
+            <button class="add" type="button">В чек</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="card card--index reveal" data-d="3">
+        <div class="card__body">
+          <span class="tag">Полный прейскурант</span>
+          <h3 class="card__name">Всё меню — 9 полок</h3>
+          <ol>
+            <li>Стрит-фуд: бейгл, бургер, чиабатта, пита, буррито, шаурма</li>
+            <li>Сэндвичи</li>
+            <li>Пицца-мини, хот-дог, выпечка</li>
+            <li>Вторые блюда с гарниром</li>
+            <li>Супы</li>
+            <li>Салаты</li>
+            <li>Халяль</li>
+            <li>Десерты и кукис</li>
+            <li>Напитки</li>
+          </ol>
+        </div>
+      </article>
+    </div>
+
+    <!-- липкая полоса-чек -->
+    <div class="checkbar-wrap">
+      <div class="checkbar" role="status">
+        <div class="checkbar__info">
+          <span class="checkbar__line">В чеке 3 позиции<span class="sep">·</span>647 ₽</span>
+          <span class="checkbar__sub">Завтра начислится 45 формул</span>
+        </div>
+        <button class="checkbar__btn" type="button">Оформить</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ПОДВАЛ -->
+<footer>
+  <div class="wrap ft">
+    <div class="ft__brand">
+      <img src="./assets/logo.png" alt="Логотип «Формула Еды»" width="52" height="52">
+      <div class="name">Формула Еды<em>честная еда для своих</em></div>
+    </div>
+    <div class="ft__spec">
+      <div><span>Кафе</span><span>Кочновский проезд, 7к1, этаж 1</span></div>
+      <div><span>Режим</span><span>Ежедневно 09:00–23:00</span></div>
+      <div><span>Доставка</span><span>Общежития МАДИ, корпуса № 1 и № 2 — до комнаты</span></div>
+      <div><span>Самовывоз</span><span>Из кафе, без очереди</span></div>
+      <div><span>Вход</span><span>Телефон + код из SMS, без паролей</span></div>
+    </div>
+    <div class="ft__bottom">
+      <span>Формула Еды · formulaedi.ru</span>
+      <span>Прототип D · «Фермерская этикетка»</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- reveal-on-scroll ---------- */
+  var reveals = [].slice.call(document.querySelectorAll('.reveal'));
+  if (reduce || !('IntersectionObserver' in window)) {
+    reveals.forEach(function(el){ el.classList.add('visible'); });
+  } else {
+    var ro = new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        if (en.isIntersecting) { en.target.classList.add('visible'); ro.unobserve(en.target); }
+      });
+    }, { threshold: .16, rootMargin: '0px 0px -6% 0px' });
+    reveals.forEach(function(el){ ro.observe(el); });
+  }
+
+  /* ---------- count-up чисел 7 / 25 / 30 ---------- */
+  var nums = [].slice.call(document.querySelectorAll('.num[data-to]'));
+  function countUp(el){
+    var to = +el.dataset.to;
+    if (reduce) { el.textContent = to; return; }
+    var t0 = null;
+    requestAnimationFrame(function step(ts){
+      t0 = t0 || ts;
+      var p = Math.min((ts - t0) / 1100, 1);
+      el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step);
+    });
+  }
+  if ('IntersectionObserver' in window && !reduce) {
+    var no = new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        if (en.isIntersecting) { countUp(en.target); no.unobserve(en.target); }
+      });
+    }, { threshold: .6 });
+    nums.forEach(function(el){ no.observe(el); });
+  } else {
+    nums.forEach(function(el){ el.textContent = el.dataset.to; });
+  }
+
+  /* ---------- прорисовка круга-печати вокруг 7% ---------- */
+  var stampT = document.getElementById('stamp-target');
+  if (stampT) {
+    if (reduce || !('IntersectionObserver' in window)) {
+      stampT.classList.add('drawn');
+    } else {
+      var so = new IntersectionObserver(function(es){
+        es.forEach(function(en){
+          if (en.isIntersecting) { en.target.classList.add('drawn'); so.unobserve(en.target); }
+        });
+      }, { threshold: .7 });
+      so.observe(stampT);
+    }
+  }
+
+  /* ---------- multi-layer parallax ---------- */
+  var layers = [].slice.call(document.querySelectorAll('[data-plx]'));
+  if (!reduce && layers.length) {
+    var ticking = false;
+    function plx(){
+      layers.forEach(function(el){
+        var host = el.closest('section') || el.parentElement;
+        var r = host.getBoundingClientRect();
+        if (r.bottom < -200 || r.top > innerHeight + 200) return;
+        var rate = parseFloat(el.dataset.plx);
+        var off = (r.top + r.height / 2 - innerHeight / 2) * rate;
+        el.style.transform = 'translate3d(0,' + off.toFixed(1) + 'px,0)';
+      });
+      ticking = false;
+    }
+    addEventListener('scroll', function(){
+      if (!ticking) { ticking = true; requestAnimationFrame(plx); }
+    }, { passive: true });
+    plx();
+  }
+
+  /* ---------- scroll-spy рейка (01 · 02 · 03) ---------- */
+  var links = [].slice.call(document.querySelectorAll('.rail a'));
+  if ('IntersectionObserver' in window && links.length) {
+    var spy = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if (e.isIntersecting) {
+          links.forEach(function(l){
+            l.classList.toggle('active', l.hash === '#' + e.target.id);
+          });
+        }
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    ['s1','s2','s3'].forEach(function(id){
+      var s = document.getElementById(id);
+      if (s) spy.observe(s);
+    });
+  }
+
+  /* ---------- тач: проявление фото в цвет при скролле ---------- */
+  if (matchMedia('(hover: none)').matches && 'IntersectionObserver' in window && !reduce) {
+    var co = new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        en.target.classList.toggle('incolor', en.intersectionRatio >= .55);
+      });
+    }, { threshold: [.3, .55, .8] });
+    [].slice.call(document.querySelectorAll('.card')).forEach(function(c){ co.observe(c); });
+  }
+
+  /* ---------- рейка категорий: активное состояние ---------- */
+  var cats = [].slice.call(document.querySelectorAll('.cats span'));
+  cats.forEach(function(c){
+    c.addEventListener('click', function(){
+      cats.forEach(function(x){ x.classList.remove('on'); });
+      c.classList.add('on');
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Формула Еды — периодическая система еды. Доставка до комнаты в общежитии МАДИ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@400;500;600;700;800&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ФОРМУЛА ЕДЫ — концепт «Периодическая таблица еды»
+   Всё меню — элементы, заказ — химическое уравнение.
+   ============================================================ */
+:root{
+  --paper:#f2eee1;
+  --paper-hi:#faf7ec;
+  --grid:rgba(90,104,45,.14);
+  --ink:#1e2418;
+  --ink-soft:#4a523c;
+  --olive:#5a682d;
+  --olive-deep:#3d4a1e;
+  --amber:#d96a2b;
+  --amber-deep:#b64f16;
+  --red:#c0492f;
+  --tint-street:#e8c9a8;
+  --tint-hot:#e5cfb2;
+  --tint-green:#ccd6a8;
+  --tint-soup:#e9d9a6;
+  --tint-sweet:#e3c3b4;
+  --tint-drink:#c9d3c4;
+  --shadow-hard:6px 6px 0 rgba(30,36,24,.16);
+  --r:4px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Wix Madefor Display',sans-serif;
+  color:var(--ink);
+  background:
+    repeating-linear-gradient(0deg,transparent 0 27px,var(--grid) 27px 28px),
+    repeating-linear-gradient(90deg,transparent 0 27px,var(--grid) 27px 28px),
+    linear-gradient(160deg,var(--paper-hi) 0%,var(--paper) 55%,#ece6d3 100%);
+  background-attachment:fixed;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+/* зерно поверх всего — убивает стерильность */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:300;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+img{max-width:100%;display:block}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'JetBrains Mono',monospace}
+.serif{font-family:'Spectral',serif}
+
+/* ---------- каркас: контент + чек-колонка на десктопе ---------- */
+.page{max-width:1400px;margin:0 auto;padding:0 16px 140px}
+@media (min-width:768px){
+  .page{display:grid;grid-template-columns:1fr 340px;gap:28px;padding:0 24px 60px;align-items:start}
+  .main-col{min-width:0}
+}
+@media (min-width:1440px){
+  .page{grid-template-columns:1fr 400px;gap:48px;padding:0 48px 80px}
+}
+
+/* ---------- шапка ---------- */
+header{
+  grid-column:1 / -1;
+  display:flex;align-items:center;gap:12px;
+  padding:14px 0 12px;
+  border-bottom:2px solid var(--ink);
+  margin-bottom:8px;
+}
+.logo-wrap{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.logo-wrap img{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle,#8a9a4d,#5a682d)}
+.logo-name{font-weight:800;font-size:17px;letter-spacing:-.02em;line-height:1.05}
+.logo-name small{display:block;font-family:'JetBrains Mono',monospace;font-weight:400;font-size:10px;letter-spacing:.08em;color:var(--olive);text-transform:uppercase}
+.head-meta{margin-left:auto;display:flex;align-items:center;gap:14px}
+.head-hours{display:none;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft)}
+.head-hours b{color:var(--ink)}
+@media (min-width:768px){.head-hours{display:block}}
+.cab-btn{
+  border:2px solid var(--ink);background:var(--paper-hi);color:var(--ink);
+  font-weight:700;font-size:13px;padding:9px 16px;border-radius:var(--r);
+  box-shadow:3px 3px 0 rgba(30,36,24,.18);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.cab-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(30,36,24,.2)}
+.cab-btn input{
+  font-family:'JetBrains Mono',monospace;font-size:13px;border:none;background:transparent;
+  color:var(--ink);width:130px;outline:none;
+}
+.cab-btn input::placeholder{color:var(--ink-soft)}
+
+/* ---------- hero ---------- */
+.hero{padding:34px 0 30px;position:relative}
+.hero-kicker{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--olive);margin-bottom:14px;display:flex;align-items:center;gap:10px;
+}
+.hero-kicker::before{content:'';width:34px;height:2px;background:var(--olive)}
+h1{
+  font-size:42px;font-weight:800;line-height:.98;letter-spacing:-.03em;
+  max-width:14ch;
+}
+h1 .thin{font-weight:400;color:var(--ink-soft)}
+h1 em{
+  font-style:normal;color:var(--amber-deep);
+  background:linear-gradient(rgba(217,106,43,.25),rgba(217,106,43,.25)) left 100%/100% 6px no-repeat;
+  -webkit-box-decoration-break:clone;box-decoration-break:clone;
+}
+.hero-sub{
+  font-family:'Spectral',serif;font-style:italic;font-weight:300;
+  font-size:17px;color:var(--ink-soft);max-width:44ch;margin-top:16px;
+}
+/* уравнение доставки */
+.hero-eq{
+  margin-top:26px;display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;
+}
+.eq-cell{
+  border:2px solid var(--ink);background:var(--paper-hi);border-radius:var(--r);
+  box-shadow:var(--shadow-hard);
+  padding:10px 12px 8px;min-width:88px;position:relative;
+}
+.eq-cell .num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);display:block}
+.eq-cell .sym{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;display:block}
+.eq-cell .lbl{font-size:11px;color:var(--ink-soft);display:block;margin-top:2px}
+.eq-cell--accent{background:var(--amber);border-color:var(--amber-deep);box-shadow:6px 6px 0 rgba(182,79,22,.3)}
+.eq-cell--accent .sym,.eq-cell--accent .lbl,.eq-cell--accent .num{color:#fff}
+.eq-cell--result{background:var(--ink);border-color:var(--ink)}
+.eq-cell--result .sym{color:var(--paper-hi)}
+.eq-cell--result .lbl{color:rgba(242,238,225,.75)}
+.eq-cell--result .num{color:rgba(242,238,225,.55)}
+.eq-op{align-self:center;font-family:'Spectral',serif;font-size:30px;font-weight:300;color:var(--ink-soft)}
+.eq-arrow{align-self:center;display:flex;align-items:center}
+.eq-arrow svg{width:44px;height:16px}
+.hero-facts{
+  margin-top:24px;display:flex;flex-wrap:wrap;gap:8px 20px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);
+}
+.hero-facts span b{color:var(--amber-deep)}
+/* фото-полоса в hero */
+.hero-strip{
+  margin-top:30px;border:2px solid var(--ink);border-radius:var(--r);overflow:hidden;
+  box-shadow:var(--shadow-hard);
+  height:170px;position:relative;
+  background:linear-gradient(120deg,#2a2118,#4a3a28 60%,#1e2418);
+}
+.hero-strip img{width:100%;height:100%;object-fit:cover;will-change:transform;animation:kb 30s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1.05)}to{transform:scale(1.16) translate(-2%,-2%)}}
+.hero-strip figcaption{
+  position:absolute;left:10px;bottom:10px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--ink);color:var(--paper-hi);padding:5px 10px;border-radius:2px;
+}
+@media (min-width:768px){
+  .hero{padding:44px 0 36px}
+  h1{font-size:58px}
+  .hero-strip{height:220px}
+}
+@media (min-width:1440px){
+  .hero{display:grid;grid-template-columns:1.25fr 1fr;gap:44px;align-items:center;padding:64px 0 48px}
+  h1{font-size:76px}
+  .hero-sub{font-size:20px}
+  .hero-strip{height:340px;margin-top:0}
+  .hero-left{max-width:640px}
+}
+
+/* появление hero каскадом */
+.rise{opacity:0;transform:translateY(26px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+.d0{animation-delay:.05s}.d1{animation-delay:.17s}.d2{animation-delay:.29s}.d3{animation-delay:.41s}.d4{animation-delay:.53s}.d5{animation-delay:.65s}
+.pulse-cell{animation:rise .7s cubic-bezier(.2,.7,.2,1) .41s forwards,ringp 2.4s ease-out 1.3s infinite}
+@keyframes ringp{0%{box-shadow:6px 6px 0 rgba(182,79,22,.3),0 0 0 0 rgba(217,106,43,.5)}70%{box-shadow:6px 6px 0 rgba(182,79,22,.3),0 0 0 14px rgba(217,106,43,0)}100%{box-shadow:6px 6px 0 rgba(182,79,22,.3),0 0 0 0 rgba(217,106,43,0)}}
+
+/* ---------- секции ---------- */
+.sec-head{display:flex;align-items:baseline;gap:14px;margin:44px 0 6px;flex-wrap:wrap}
+.sec-head h2{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.sec-head .sec-no{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--olive);letter-spacing:.14em;text-transform:uppercase}
+.sec-note{font-family:'Spectral',serif;font-style:italic;font-weight:300;color:var(--ink-soft);font-size:15px;margin-bottom:18px}
+@media (min-width:768px){.sec-head h2{font-size:34px}}
+@media (min-width:1440px){.sec-head h2{font-size:42px}.sec-head{margin-top:64px}}
+
+/* ---------- таблица категорий ---------- */
+.ptable{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+}
+.pt-cell{
+  border:2px solid var(--ink);border-radius:var(--r);background:var(--paper-hi);
+  padding:9px 10px 8px;text-align:left;position:relative;overflow:hidden;
+  transition:transform .16s ease,box-shadow .16s ease;
+  box-shadow:3px 3px 0 rgba(30,36,24,.12);
+  min-height:86px;display:flex;flex-direction:column;justify-content:flex-start;
+}
+.pt-cell::before{content:'';position:absolute;inset:0;background:var(--tint,transparent);opacity:.55;z-index:0}
+.pt-cell>*{position:relative;z-index:1}
+.pt-cell:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(30,36,24,.18)}
+.pt-cell .num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft)}
+.pt-cell .sym{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.pt-cell .name{font-size:10px;line-height:1.25;color:var(--ink-soft);margin-top:auto}
+.pt-cell.active{background:var(--ink);border-color:var(--ink)}
+.pt-cell.active::before{opacity:0}
+.pt-cell.active .sym{color:var(--paper-hi)}
+.pt-cell.active .num,.pt-cell.active .name{color:rgba(242,238,225,.7)}
+@media (min-width:768px){
+  .ptable{grid-template-columns:repeat(5,1fr)}
+  .pt-cell .sym{font-size:30px}
+  .pt-cell .name{font-size:11px}
+}
+@media (min-width:1440px){
+  .ptable{grid-template-columns:repeat(10,1fr);gap:10px}
+  .pt-cell{min-height:104px}
+}
+.pt-reset{
+  border-style:dashed;background:transparent;box-shadow:none;
+  align-items:center;justify-content:center;text-align:center;color:var(--ink-soft);
+}
+.pt-reset .sym{font-size:20px;font-weight:600}
+
+/* ---------- меню: карточки-элементы ---------- */
+.menu-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:6px}
+@media (min-width:768px){.menu-grid{grid-template-columns:repeat(2,1fr);gap:16px}}
+@media (min-width:1440px){.menu-grid{grid-template-columns:repeat(3,1fr);gap:20px}}
+.el-card{
+  border:2px solid var(--ink);border-radius:var(--r);background:var(--paper-hi);
+  box-shadow:var(--shadow-hard);overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+.el-card:hover{transform:translate(-2px,-3px);box-shadow:9px 9px 0 rgba(30,36,24,.18)}
+.el-top{
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding:10px 12px 6px;border-bottom:1px dashed rgba(30,36,24,.25);
+}
+.el-top .sym{font-size:28px;font-weight:800;letter-spacing:-.03em}
+.el-top .sym sub{font-size:12px;font-weight:600;color:var(--ink-soft)}
+.el-top .price{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--amber-deep)}
+.el-top .price small{font-weight:400;font-size:10px;color:var(--ink-soft);display:block;text-align:right;letter-spacing:.06em}
+.el-photo{height:150px;position:relative;overflow:hidden;background:var(--ph-bg,linear-gradient(135deg,#c9b18a,#8a9a4d))}
+.el-photo img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.el-card:hover .el-photo img{transform:scale(1.05)}
+.el-photo .ghost-sym{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:84px;font-weight:800;color:rgba(30,36,24,.22);letter-spacing:-.04em;
+}
+.el-photo .cat-tag{
+  position:absolute;top:8px;left:8px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--ink);color:var(--paper-hi);padding:4px 8px;border-radius:2px;
+}
+.el-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.el-name{font-weight:700;font-size:16px;letter-spacing:-.01em;line-height:1.2}
+.el-desc{font-family:'Spectral',serif;font-style:italic;font-weight:300;font-size:13px;color:var(--ink-soft);flex:1}
+.el-add{
+  border:2px solid var(--ink);background:var(--ink);color:var(--paper-hi);
+  font-weight:700;font-size:13px;padding:10px 12px;border-radius:var(--r);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  transition:background .15s ease,color .15s ease;
+}
+.el-add .mono{font-size:11px;opacity:.7}
+.el-add:hover{background:var(--amber);border-color:var(--amber-deep)}
+.el-add.in-cart{background:var(--olive);border-color:var(--olive-deep)}
+@media (min-width:1440px){.el-photo{height:180px}}
+
+/* ---------- свойства формул (бонусы) ---------- */
+.props{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:768px){.props{grid-template-columns:2fr 1.4fr 1.6fr}}
+.prop{
+  border:2px solid var(--ink);border-radius:var(--r);background:var(--paper-hi);
+  padding:16px;box-shadow:var(--shadow-hard);position:relative;overflow:hidden;
+}
+.prop .big{font-size:46px;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--olive-deep)}
+.prop .big.warn{color:var(--red)}
+.prop .big .mono{font-size:20px;letter-spacing:0}
+.prop h3{font-size:15px;font-weight:700;margin-top:8px}
+.prop p{font-family:'Spectral',serif;font-weight:300;font-size:13.5px;color:var(--ink-soft);margin-top:4px}
+.prop .idx{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft)}
+@media (min-width:1440px){.prop .big{font-size:58px}.prop{padding:22px}}
+.burn-banner{
+  display:none;margin-top:12px;border:2px solid var(--red);background:rgba(192,73,47,.08);
+  border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--red);font-weight:600;
+}
+.burn-banner.show{display:block}
+
+/* ---------- чек «Уравнение заказа» ---------- */
+.receipt{
+  border:2px solid var(--ink);border-radius:6px;background:var(--paper-hi);
+  box-shadow:var(--shadow-hard);overflow:hidden;
+}
+.receipt-head{
+  background:var(--ink);color:var(--paper-hi);padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:baseline;
+}
+.receipt-head h2{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.receipt-head .mono{font-size:10px;opacity:.65;letter-spacing:.1em}
+.formula-line{
+  padding:14px 16px;border-bottom:1px dashed rgba(30,36,24,.3);
+  font-family:'Spectral',serif;font-size:19px;font-weight:400;min-height:52px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:2px;
+}
+.formula-line .f-sym{font-weight:600;font-style:normal}
+.formula-line .f-sym sub{font-size:12px;color:var(--amber-deep);font-weight:700}
+.formula-line .f-plus{color:var(--ink-soft);margin:0 4px;font-weight:300}
+.formula-line .f-arrow{color:var(--amber-deep);margin:0 6px;font-weight:400}
+.formula-line .f-res{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--amber-deep)}
+.formula-line .f-empty{font-style:italic;font-weight:300;color:var(--ink-soft);font-size:14px}
+.f-pop{display:inline-block;animation:fpop .35s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes fpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.receipt-items{list-style:none;padding:6px 16px;border-bottom:1px dashed rgba(30,36,24,.3)}
+.receipt-items:empty{display:none}
+.ri{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13.5px}
+.ri .ri-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ri .ri-name b{font-weight:700}
+.ri-qty{display:flex;align-items:center;gap:6px}
+.ri-qty button{
+  width:22px;height:22px;border:1.5px solid var(--ink);background:transparent;border-radius:3px;
+  font-weight:700;font-size:13px;line-height:1;color:var(--ink);
+}
+.ri-qty button:hover{background:var(--ink);color:var(--paper-hi)}
+.ri-qty .q{font-family:'JetBrains Mono',monospace;font-size:13px;min-width:16px;text-align:center}
+.ri .ri-sum{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;min-width:58px;text-align:right}
+.receipt details{border-bottom:1px dashed rgba(30,36,24,.3)}
+.receipt summary{
+  padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer;list-style:none;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.receipt summary::-webkit-details-marker{display:none}
+.receipt summary .chev{transition:transform .2s ease;font-size:11px;color:var(--ink-soft)}
+.receipt details[open] summary .chev{transform:rotate(180deg)}
+.det-body{padding:0 16px 12px;font-size:13px;color:var(--ink-soft)}
+.det-body .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.fx-slider{width:100%;accent-color:var(--amber-deep);margin-top:8px}
+.fx-note{font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:6px}
+.fx-note b{color:var(--amber-deep)}
+.totals{padding:12px 16px;border-bottom:1px dashed rgba(30,36,24,.3);font-size:13.5px}
+.totals .row{display:flex;justify-content:space-between;padding:3px 0}
+.totals .row.discount{color:var(--olive-deep)}
+.totals .row.grand{font-size:19px;font-weight:800;padding-top:8px}
+.totals .row.grand .mono{font-size:19px}
+/* адрес */
+.addr{padding:12px 16px;border-bottom:1px dashed rgba(30,36,24,.3)}
+.addr-toggle{display:flex;gap:6px;margin-bottom:10px}
+.addr-toggle button{
+  flex:1;border:2px solid var(--ink);background:transparent;border-radius:var(--r);
+  font-size:12px;font-weight:700;padding:8px 4px;color:var(--ink-soft);
+}
+.addr-toggle button.on{background:var(--olive);border-color:var(--olive-deep);color:#fff}
+.addr-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.addr-fields select,.addr-fields input{
+  width:100%;border:1.5px solid var(--ink);border-radius:3px;background:var(--paper-hi);
+  font-family:'JetBrains Mono',monospace;font-size:12px;padding:8px 6px;color:var(--ink);outline:none;
+}
+.addr-fields input:focus,.addr-fields select:focus{border-color:var(--amber-deep)}
+.pickup-note{font-family:'Spectral',serif;font-style:italic;font-weight:300;font-size:13px;color:var(--ink-soft);display:none}
+.addr.pickup .addr-fields{display:none}
+.addr.pickup .pickup-note{display:block}
+/* CTA */
+.receipt-cta{padding:14px 16px 16px}
+.pay-btn{
+  width:100%;border:2px solid var(--amber-deep);background:var(--amber);color:#fff;
+  font-weight:800;font-size:16px;padding:15px 12px;border-radius:var(--r);
+  box-shadow:4px 4px 0 rgba(182,79,22,.3);
+  position:relative;overflow:hidden;letter-spacing:-.01em;
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.pay-btn:hover{transform:translate(-1px,-2px);box-shadow:6px 6px 0 rgba(182,79,22,.35)}
+.pay-btn:disabled{background:#b9b3a0;border-color:#9a947f;box-shadow:none;cursor:default;transform:none}
+.pay-btn::after{content:'';position:absolute;top:0;left:-120%;width:60%;height:100%;
+  background:linear-gradient(110deg,transparent,rgba(255,255,255,.45),transparent);animation:sweep 5.5s ease-in-out infinite}
+@keyframes sweep{0%,100%{left:-120%}55%,70%{left:130%}}
+.accrue-note{
+  margin-top:10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);
+}
+.accrue-note b{color:var(--olive-deep)}
+
+/* desktop: чек прилипает справа */
+.receipt-col{display:none}
+@media (min-width:768px){
+  .receipt-col{display:block;position:sticky;top:16px}
+}
+/* mobile: нижний лист */
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:200;
+  transform:translateY(calc(100% - 64px));
+  transition:transform .38s cubic-bezier(.3,.8,.3,1);
+  max-height:86vh;display:flex;flex-direction:column;
+  filter:drop-shadow(0 -6px 24px rgba(30,36,24,.25));
+}
+.sheet.open{transform:translateY(0)}
+.sheet-bar{
+  height:64px;background:var(--ink);color:var(--paper-hi);
+  display:flex;align-items:center;gap:12px;padding:0 16px;cursor:pointer;
+  border-top-left-radius:10px;border-top-right-radius:10px;
+}
+.sheet-bar .sb-formula{
+  flex:1;min-width:0;font-family:'Spectral',serif;font-size:16px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sheet-bar .sb-formula sub{color:var(--amber);font-weight:700;font-size:11px}
+.sheet-bar .sb-total{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--amber)}
+.sheet-bar .sb-chev{transition:transform .3s ease;font-size:12px;opacity:.7}
+.sheet.open .sb-chev{transform:rotate(180deg)}
+.sheet-body{overflow-y:auto;background:var(--paper-hi)}
+.sheet-body .receipt{border:none;box-shadow:none;border-radius:0}
+@media (min-width:768px){.sheet{display:none}}
+
+/* ---------- футер ---------- */
+footer{
+  grid-column:1 / -1;margin-top:56px;border-top:2px solid var(--ink);
+  padding:22px 0 30px;display:flex;flex-wrap:wrap;gap:14px 40px;
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-soft);
+}
+footer b{color:var(--ink)}
+footer .f-brand{font-family:'Wix Madefor Display',sans-serif;font-weight:800;font-size:14px;color:var(--ink)}
+
+/* reveal-on-scroll */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .rise,.reveal{opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header>
+    <a class="logo-wrap" href="#">
+      <img src="./assets/logo.png" alt="Логотип Формула Еды">
+      <span class="logo-name">Формула Еды<small>периодическая система еды</small></span>
+    </a>
+    <div class="head-meta">
+      <span class="head-hours">ежедневно <b>09:00–23:00</b></span>
+      <button class="cab-btn" id="cabBtn" type="button">Кабинет</button>
+    </div>
+  </header>
+
+  <div class="main-col">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-left">
+        <p class="hero-kicker rise d0">общежития МАДИ · корпуса №1 и №2</p>
+        <h1 class="rise d1">Еда — <span class="thin">точная</span> наука. <em>Реакция&nbsp;— 30&nbsp;минут.</em></h1>
+        <p class="hero-sub rise d2">Собери свою формулу из девяти групп элементов — и мы доставим готовое соединение прямо до двери комнаты. Или забери сам в кафе на Кочновском.</p>
+
+        <div class="hero-eq" aria-label="Уравнение доставки">
+          <div class="eq-cell rise d3">
+            <span class="num">01 · элемент</span>
+            <span class="sym">Ед</span>
+            <span class="lbl">Еда из кафе</span>
+          </div>
+          <span class="eq-op rise d3">+</span>
+          <div class="eq-cell eq-cell--accent pulse-cell">
+            <span class="num">02 · катализатор</span>
+            <span class="sym">30′</span>
+            <span class="lbl">минут или быстрее</span>
+          </div>
+          <span class="eq-arrow rise d4">
+            <svg viewBox="0 0 44 16" fill="none" aria-hidden="true"><path d="M0 8h38m0 0-7-6m7 6-7 6" stroke="#1e2418" stroke-width="2"/></svg>
+          </span>
+          <div class="eq-cell eq-cell--result rise d4">
+            <span class="num">03 · продукт</span>
+            <span class="sym">Кмн</span>
+            <span class="lbl">твоя комната</span>
+          </div>
+        </div>
+
+        <p class="hero-facts rise d5">
+          <span>кэшбэк <b>+7%</b> формулами</span>
+          <span>списание до <b>25%</b> заказа</span>
+          <span>оплата онлайн</span>
+        </p>
+      </div>
+
+      <figure class="hero-strip rise d5">
+        <img src="./assets/delivery.jpg" alt="Курьер Формулы Еды с крафт-пакетами">
+        <figcaption>лабораторная доставка · до двери комнаты</figcaption>
+      </figure>
+    </section>
+
+    <!-- ТАБЛИЦА КАТЕГОРИЙ -->
+    <section id="table">
+      <div class="sec-head reveal">
+        <span class="sec-no">Табл. 1</span>
+        <h2>Девять групп элементов</h2>
+      </div>
+      <p class="sec-note reveal">Нажми на ячейку — таблица отфильтрует меню по группе.</p>
+      <div class="ptable reveal" id="ptable" role="tablist" aria-label="Категории меню"></div>
+    </section>
+
+    <!-- МЕНЮ -->
+    <section id="menu">
+      <div class="sec-head reveal">
+        <span class="sec-no">Табл. 2</span>
+        <h2 id="menuTitle">Все элементы</h2>
+      </div>
+      <p class="sec-note reveal">Цена указана как атомная масса, в рублях. Нажми «в формулу» — элемент попадёт в уравнение заказа.</p>
+      <div class="menu-grid" id="menuGrid"></div>
+    </section>
+
+    <!-- СВОЙСТВА ФОРМУЛ -->
+    <section id="bonus">
+      <div class="sec-head reveal">
+        <span class="sec-no">Табл. 3</span>
+        <h2>Свойства «формул»</h2>
+      </div>
+      <p class="sec-note reveal">Формулы — наша бонусная валюта. Ведут себя как нестабильные изотопы: накапливаются быстро, распадаются по расписанию.</p>
+      <div class="props">
+        <div class="prop reveal">
+          <span class="idx">св-во 01</span>
+          <div class="big">+7<span class="mono">%</span></div>
+          <h3>Начисление</h3>
+          <p>С каждого заказа завтра на счёт упадёт 7% формулами. Заказал на 500 ₽ — получил 35 формул.</p>
+        </div>
+        <div class="prop reveal">
+          <span class="idx">св-во 02</span>
+          <div class="big">≤25<span class="mono">%</span></div>
+          <h3>Списание</h3>
+          <p>Формулами можно оплатить до четверти любого заказа. 1 формула = 1 ₽.</p>
+        </div>
+        <div class="prop reveal">
+          <span class="idx">св-во 03</span>
+          <div class="big warn">1-е<span class="mono"> число</span></div>
+          <h3>Период полураспада</h3>
+          <p>Неиспользованные формулы сгорают 1-го числа каждого месяца. Успей потратить.</p>
+          <div class="burn-banner" id="burnBanner">Внимание: до сгорания формул осталось меньше недели — потрать их до 1-го числа.</div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /main-col -->
+
+  <!-- ЧЕК: десктоп-колонка -->
+  <aside class="receipt-col">
+    <div class="receipt" data-receipt>
+      <div class="receipt-head">
+        <h2>Уравнение заказа</h2>
+        <span class="mono">Ур. №001</span>
+      </div>
+      <div class="formula-line" data-formula aria-live="polite"></div>
+      <ul class="receipt-items" data-items></ul>
+      <details>
+        <summary>Приборы <span class="chev">▾</span></summary>
+        <div class="det-body">
+          <div class="row">
+            <span>Комплектов (бесплатно)</span>
+            <span class="ri-qty">
+              <button type="button" data-cutlery="-1" aria-label="Меньше приборов">−</button>
+              <span class="q" data-cutlery-q>1</span>
+              <button type="button" data-cutlery="1" aria-label="Больше приборов">+</button>
+            </span>
+          </div>
+        </div>
+      </details>
+      <details>
+        <summary>Списать формулы <span class="chev">▾</span></summary>
+        <div class="det-body">
+          <div class="row"><span>На счёте</span><span class="mono"><b data-balance>132</b> формулы</span></div>
+          <input type="range" class="fx-slider" data-fx-slider min="0" max="0" value="0" step="1" aria-label="Сколько формул списать">
+          <p class="fx-note">Спишем <b data-fx-val>0</b> формул · максимум 25% заказа</p>
+        </div>
+      </details>
+      <div class="totals">
+        <div class="row"><span>Позиции</span><span class="mono" data-subtotal>0 ₽</span></div>
+        <div class="row"><span>Доставка до комнаты</span><span class="mono" data-delivery-fee>0 ₽</span></div>
+        <div class="row discount" data-discount-row hidden><span>Формулы</span><span class="mono" data-discount>−0 ₽</span></div>
+        <div class="row grand"><span>Итого</span><span class="mono" data-grand>0 ₽</span></div>
+      </div>
+      <div class="addr" data-addr>
+        <div class="addr-toggle" role="group" aria-label="Способ получения">
+          <button type="button" class="on" data-mode="delivery">До комнаты</button>
+          <button type="button" data-mode="pickup">Самовывоз</button>
+        </div>
+        <div class="addr-fields">
+          <select aria-label="Корпус"><option>Корпус №1</option><option>Корпус №2</option></select>
+          <input type="text" inputmode="numeric" placeholder="Этаж" aria-label="Этаж">
+          <input type="text" inputmode="numeric" placeholder="Комната" aria-label="Комната">
+        </div>
+        <p class="pickup-note">Кафе: Кочновский проезд, 7к1, этаж 1 · 09:00–23:00</p>
+      </div>
+      <div class="receipt-cta">
+        <button class="pay-btn" type="button" data-pay disabled>Соберите формулу</button>
+        <p class="accrue-note">завтра начислится <b data-accrue>0</b> формул</p>
+      </div>
+    </div>
+  </aside>
+
+  <footer>
+    <span class="f-brand">Формула Еды</span>
+    <span>кафе: <b>Кочновский проезд, 7к1</b>, этаж 1</span>
+    <span>ежедневно <b>09:00–23:00</b></span>
+    <span>доставка: общежития МАДИ, корпуса №1 и №2</span>
+    <span>вход по номеру телефона + SMS</span>
+  </footer>
+
+</div><!-- /page -->
+
+<!-- ЧЕК: мобильный нижний лист -->
+<div class="sheet" id="sheet">
+  <div class="sheet-bar" id="sheetBar" role="button" aria-expanded="false" tabindex="0" aria-label="Открыть чек">
+    <span class="sb-formula" data-sb-formula>Соберите формулу заказа</span>
+    <span class="sb-total" data-sb-total>0 ₽</span>
+    <span class="sb-chev">▲</span>
+  </div>
+  <div class="sheet-body">
+    <div class="receipt" data-receipt>
+      <div class="formula-line" data-formula aria-live="polite"></div>
+      <ul class="receipt-items" data-items></ul>
+      <details>
+        <summary>Приборы <span class="chev">▾</span></summary>
+        <div class="det-body">
+          <div class="row">
+            <span>Комплектов (бесплатно)</span>
+            <span class="ri-qty">
+              <button type="button" data-cutlery="-1" aria-label="Меньше приборов">−</button>
+              <span class="q" data-cutlery-q>1</span>
+              <button type="button" data-cutlery="1" aria-label="Больше приборов">+</button>
+            </span>
+          </div>
+        </div>
+      </details>
+      <details>
+        <summary>Списать формулы <span class="chev">▾</span></summary>
+        <div class="det-body">
+          <div class="row"><span>На счёте</span><span class="mono"><b data-balance>132</b> формулы</span></div>
+          <input type="range" class="fx-slider" data-fx-slider min="0" max="0" value="0" step="1" aria-label="Сколько формул списать">
+          <p class="fx-note">Спишем <b data-fx-val>0</b> формул · максимум 25% заказа</p>
+        </div>
+      </details>
+      <div class="totals">
+        <div class="row"><span>Позиции</span><span class="mono" data-subtotal>0 ₽</span></div>
+        <div class="row"><span>Доставка до комнаты</span><span class="mono" data-delivery-fee>0 ₽</span></div>
+        <div class="row discount" data-discount-row hidden><span>Формулы</span><span class="mono" data-discount>−0 ₽</span></div>
+        <div class="row grand"><span>Итого</span><span class="mono" data-grand>0 ₽</span></div>
+      </div>
+      <div class="addr" data-addr>
+        <div class="addr-toggle" role="group" aria-label="Способ получения">
+          <button type="button" class="on" data-mode="delivery">До комнаты</button>
+          <button type="button" data-mode="pickup">Самовывоз</button>
+        </div>
+        <div class="addr-fields">
+          <select aria-label="Корпус"><option>Корпус №1</option><option>Корпус №2</option></select>
+          <input type="text" inputmode="numeric" placeholder="Этаж" aria-label="Этаж">
+          <input type="text" inputmode="numeric" placeholder="Комната" aria-label="Комната">
+        </div>
+        <p class="pickup-note">Кафе: Кочновский проезд, 7к1, этаж 1 · 09:00–23:00</p>
+      </div>
+      <div class="receipt-cta">
+        <button class="pay-btn" type="button" data-pay disabled>Соберите формулу</button>
+        <p class="accrue-note">завтра начислится <b data-accrue>0</b> формул</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- данные ---------- */
+var CATS = [
+  {id:'street', sym:'Сф', name:'Стрит-фуд', tint:'var(--tint-street)'},
+  {id:'sand',   sym:'Сэ', name:'Сэндвичи', tint:'var(--tint-street)'},
+  {id:'pizza',  sym:'Пц', name:'Пицца-мини, хот-дог, выпечка', tint:'var(--tint-hot)'},
+  {id:'main',   sym:'Вб', name:'Вторые блюда с гарниром', tint:'var(--tint-hot)'},
+  {id:'soup',   sym:'Сп', name:'Супы', tint:'var(--tint-soup)'},
+  {id:'salad',  sym:'Сл', name:'Салаты', tint:'var(--tint-green)'},
+  {id:'halal',  sym:'Хл', name:'Халяль', tint:'var(--tint-green)'},
+  {id:'sweet',  sym:'Дс', name:'Десерты и кукис', tint:'var(--tint-sweet)'},
+  {id:'drink',  sym:'Нп', name:'Напитки', tint:'var(--tint-drink)'}
+];
+var ITEMS = [
+  {sym:'Шк', name:'Шаурма классик', desc:'курица, свежие овощи, фирменный соус, тонкий лаваш', price:269, cat:'street', img:'./assets/shawarma.jpg', bg:'linear-gradient(135deg,#d8b48a,#a2652f)'},
+  {sym:'Бф', name:'Бургер «Формула»', desc:'говяжья котлета, чеддер, карамельный лук, картофель фри', price:249, cat:'street', img:'./assets/burger.jpg', bg:'linear-gradient(135deg,#caa06a,#7d4a22)'},
+  {sym:'Бл', name:'Бейгл с лососем', desc:'слабосолёный лосось, сливочный сыр, огурец, руккола', price:319, cat:'street', img:null, bg:'linear-gradient(135deg,#e8c9a8,#c98a6a)'},
+  {sym:'Кс', name:'Клаб-сэндвич', desc:'три слоя: курица, бекон, томаты, айсберг и фри', price:289, cat:'sand', img:'./assets/sandwich.jpg', bg:'linear-gradient(135deg,#dab887,#93602c)'},
+  {sym:'Пм', name:'Пицца-мини пепперони', desc:'моцарелла, пепперони, томатный соус — порция на одного', price:199, cat:'pizza', img:'./assets/pizza.jpg', bg:'linear-gradient(135deg,#d8955a,#8f3a1c)'},
+  {sym:'Уд', name:'Удон с курицей', desc:'пшеничная лапша, овощи вок, соус терияки, кунжут', price:259, cat:'main', img:'./assets/ramen.jpg', bg:'linear-gradient(135deg,#c9b18a,#6d5a35)'},
+  {sym:'Сд', name:'Суп дня', desc:'каждый день новый — спроси в чеке, что сегодня в колбе', price:149, cat:'soup', img:'./assets/soup.jpg', bg:'linear-gradient(135deg,#e9d9a6,#b08f45)'},
+  {sym:'Цз', name:'Цезарь с курицей', desc:'ромэн, пармезан, гренки, классическая заправка', price:229, cat:'salad', img:'./assets/salad.jpg', bg:'linear-gradient(135deg,#ccd6a8,#5a682d)'},
+  {sym:'Шх', name:'Шаурма халяль', desc:'халяльная курица, овощи, соус на йогурте', price:279, cat:'halal', img:null, bg:'linear-gradient(135deg,#ccd6a8,#7a8a42)'},
+  {sym:'Кк', name:'Кукис двойной шоколад', desc:'тёплый, тягучий внутри, с кусочками бельгийского шоколада', price:89, cat:'sweet', img:'./assets/cookies.jpg', bg:'linear-gradient(135deg,#c9a27a,#5f3a22)'},
+  {sym:'Кп', name:'Капучино 300 мл', desc:'зерно свежей обжарки, молоко 3,2%, плотная пена', price:139, cat:'drink', img:'./assets/coffee.jpg', bg:'linear-gradient(135deg,#d9c3a0,#8a6a45)'},
+  {sym:'Мо', name:'Морс облепиховый', desc:'варим сами: облепиха, мёд, немного имбиря', price:119, cat:'drink', img:null, bg:'linear-gradient(135deg,#e8b04a,#c0492f)'}
+];
+var BALANCE = 132;          // формул на счёте (демо)
+var MAX_SPEND_SHARE = .25;  // ≤25% заказа
+var CASHBACK = .07;         // +7%
+
+/* ---------- состояние ---------- */
+var cart = {};      // sym -> qty
+var fxSpend = 0;    // списываемые формулы
+var mode = 'delivery';
+var cutlery = 1;
+
+function fmt(n){ return n.toLocaleString('ru-RU') + ' ₽'; }
+function subtotal(){
+  var s = 0;
+  for (var k in cart) s += itemBySym(k).price * cart[k];
+  return s;
+}
+function itemBySym(sym){ for (var i=0;i<ITEMS.length;i++) if (ITEMS[i].sym===sym) return ITEMS[i]; }
+function maxSpend(){ return Math.min(BALANCE, Math.floor(subtotal()*MAX_SPEND_SHARE)); }
+
+/* ---------- таблица категорий ---------- */
+var ptable = document.getElementById('ptable');
+var activeCat = null;
+CATS.forEach(function(c, i){
+  var count = ITEMS.filter(function(it){return it.cat===c.id;}).length;
+  var b = document.createElement('button');
+  b.className = 'pt-cell';
+  b.type = 'button';
+  b.setAttribute('role','tab');
+  b.style.setProperty('--tint', c.tint);
+  b.innerHTML = '<span class="num">'+String(i+1).padStart(2,'0')+' · позиций: '+count+'</span>'+
+                '<span class="sym">'+c.sym+'</span>'+
+                '<span class="name">'+c.name+'</span>';
+  b.addEventListener('click', function(){
+    activeCat = (activeCat===c.id) ? null : c.id;
+    renderTable(); renderMenu();
+    document.getElementById('menu').scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+  });
+  b.dataset.cat = c.id;
+  ptable.appendChild(b);
+});
+var resetBtn = document.createElement('button');
+resetBtn.className = 'pt-cell pt-reset';
+resetBtn.type = 'button';
+resetBtn.innerHTML = '<span class="sym">Все<br>элементы</span>';
+resetBtn.addEventListener('click', function(){ activeCat=null; renderTable(); renderMenu(); });
+ptable.appendChild(resetBtn);
+
+function renderTable(){
+  ptable.querySelectorAll('.pt-cell[data-cat]').forEach(function(el){
+    el.classList.toggle('active', el.dataset.cat===activeCat);
+  });
+  var t = document.getElementById('menuTitle');
+  if (activeCat){
+    var c = CATS.filter(function(x){return x.id===activeCat;})[0];
+    t.textContent = c.sym + ' · ' + c.name;
+  } else t.textContent = 'Все элементы';
+}
+
+/* ---------- меню ---------- */
+var menuGrid = document.getElementById('menuGrid');
+function renderMenu(){
+  menuGrid.innerHTML = '';
+  ITEMS.filter(function(it){ return !activeCat || it.cat===activeCat; })
+    .forEach(function(it){
+      var cat = CATS.filter(function(c){return c.id===it.cat;})[0];
+      var card = document.createElement('article');
+      card.className = 'el-card reveal';
+      var media = it.img
+        ? '<img src="'+it.img+'" alt="'+it.name+'" loading="lazy">'
+        : '<span class="ghost-sym" aria-hidden="true">'+it.sym+'</span>';
+      card.innerHTML =
+        '<div class="el-top"><span class="sym">'+it.sym+'</span>'+
+          '<span class="price mono">'+it.price+' ₽<small>атомная масса</small></span></div>'+
+        '<div class="el-photo" style="--ph-bg:'+it.bg+'">'+media+
+          '<span class="cat-tag">'+cat.sym+' · '+cat.name+'</span></div>'+
+        '<div class="el-body">'+
+          '<h3 class="el-name">'+it.name+'</h3>'+
+          '<p class="el-desc">'+it.desc+'</p>'+
+          '<button class="el-add" type="button" data-add="'+it.sym+'">'+
+            '<span>В формулу</span><span class="mono">+ '+it.sym+'</span></button>'+
+        '</div>';
+      menuGrid.appendChild(card);
+    });
+  observeReveals();
+  syncAddButtons();
+}
+menuGrid.addEventListener('click', function(e){
+  var btn = e.target.closest('[data-add]');
+  if (!btn) return;
+  var sym = btn.dataset.add;
+  cart[sym] = (cart[sym]||0) + 1;
+  clampFx();
+  renderReceipts(true);
+  syncAddButtons();
+});
+function syncAddButtons(){
+  menuGrid.querySelectorAll('[data-add]').forEach(function(b){
+    var q = cart[b.dataset.add]||0;
+    b.classList.toggle('in-cart', q>0);
+    b.querySelector('span:first-child').textContent = q>0 ? 'В формуле ×'+q : 'В формулу';
+  });
+}
+
+/* ---------- чек (два экземпляра: sidebar + sheet) ---------- */
+var receipts = Array.prototype.slice.call(document.querySelectorAll('[data-receipt]'));
+
+function clampFx(){
+  var m = maxSpend();
+  if (fxSpend > m) fxSpend = m;
+}
+
+function formulaHTML(withPop){
+  var keys = Object.keys(cart).filter(function(k){return cart[k]>0;});
+  if (!keys.length) return '<span class="f-empty">Пока пусто — добавь элементы из таблицы</span>';
+  var parts = keys.map(function(k, i){
+    var q = cart[k];
+    var pop = (withPop && i===keys.length-1 && !reduce) ? ' f-pop' : '';
+    return '<span class="f-sym'+pop+'">'+k+(q>1?'<sub>'+q+'</sub>':'')+'</span>';
+  });
+  var total = subtotal() + deliveryFee() - fxSpend;
+  return parts.join('<span class="f-plus">+</span>') +
+    '<span class="f-arrow">→</span><span class="f-res">'+fmt(total)+'</span>';
+}
+function deliveryFee(){ return 0; } // доставка до комнаты бесплатная
+
+function renderReceipts(withPop){
+  clampFx();
+  var sub = subtotal();
+  var grand = sub + deliveryFee() - fxSpend;
+  var accrue = Math.floor(grand * CASHBACK);
+  var keys = Object.keys(cart).filter(function(k){return cart[k]>0;});
+
+  receipts.forEach(function(r){
+    r.querySelector('[data-formula]').innerHTML = formulaHTML(withPop);
+
+    var ul = r.querySelector('[data-items]');
+    ul.innerHTML = keys.map(function(k){
+      var it = itemBySym(k), q = cart[k];
+      return '<li class="ri">'+
+        '<span class="ri-name"><b>'+it.sym+'</b> '+it.name+'</span>'+
+        '<span class="ri-qty">'+
+          '<button type="button" data-dec="'+k+'" aria-label="Убрать одну">−</button>'+
+          '<span class="q">'+q+'</span>'+
+          '<button type="button" data-inc="'+k+'" aria-label="Добавить одну">+</button>'+
+        '</span>'+
+        '<span class="ri-sum">'+fmt(it.price*q)+'</span></li>';
+    }).join('');
+
+    r.querySelector('[data-cutlery-q]').textContent = cutlery;
+
+    var slider = r.querySelector('[data-fx-slider]');
+    slider.max = maxSpend();
+    slider.value = fxSpend;
+    r.querySelector('[data-fx-val]').textContent = fxSpend;
+    r.querySelector('[data-balance]').textContent = BALANCE;
+
+    r.querySelector('[data-subtotal]').textContent = fmt(sub);
+    r.querySelector('[data-delivery-fee]').textContent = mode==='delivery' ? 'бесплатно' : '—';
+    var dRow = r.querySelector('[data-discount-row]');
+    dRow.hidden = fxSpend<=0;
+    r.querySelector('[data-discount]').textContent = '−'+fmt(fxSpend);
+    r.querySelector('[data-grand]').textContent = fmt(grand);
+
+    var pay = r.querySelector('[data-pay]');
+    pay.disabled = !keys.length;
+    pay.textContent = keys.length
+      ? 'Оплатить '+fmt(grand)+' и оформить заказ'
+      : 'Соберите формулу';
+    r.querySelector('[data-accrue]').textContent = accrue;
+
+    r.querySelectorAll('[data-mode]').forEach(function(b){
+      b.classList.toggle('on', b.dataset.mode===mode);
+    });
+    r.querySelector('[data-addr]').classList.toggle('pickup', mode==='pickup');
+  });
+
+  /* мобильная планка */
+  var sbF = document.querySelector('[data-sb-formula]');
+  var sbT = document.querySelector('[data-sb-total]');
+  if (keys.length){
+    sbF.innerHTML = keys.map(function(k){
+      return k + (cart[k]>1?'<sub>'+cart[k]+'</sub>':'');
+    }).join(' + ') + ' →';
+    sbT.textContent = fmt(grand);
+  } else {
+    sbF.textContent = 'Соберите формулу заказа';
+    sbT.textContent = '0 ₽';
+  }
+}
+
+/* делегированные события внутри чеков */
+receipts.forEach(function(r){
+  r.addEventListener('click', function(e){
+    var inc = e.target.closest('[data-inc]');
+    var dec = e.target.closest('[data-dec]');
+    var cut = e.target.closest('[data-cutlery]');
+    var m = e.target.closest('[data-mode]');
+    var pay = e.target.closest('[data-pay]');
+    if (inc){ cart[inc.dataset.inc]++; renderReceipts(false); syncAddButtons(); }
+    if (dec){
+      var k = dec.dataset.dec;
+      cart[k]--; if (cart[k]<=0) delete cart[k];
+      renderReceipts(false); syncAddButtons();
+    }
+    if (cut){
+      cutlery = Math.max(0, Math.min(6, cutlery + parseInt(cut.dataset.cutlery,10)));
+      renderReceipts(false);
+    }
+    if (m){ mode = m.dataset.mode; renderReceipts(false); }
+    if (pay && !pay.disabled){
+      pay.textContent = 'Переходим к оплате…';
+      setTimeout(function(){ renderReceipts(false); }, 1400);
+    }
+  });
+  r.querySelector('[data-fx-slider]').addEventListener('input', function(e){
+    fxSpend = parseInt(e.target.value,10)||0;
+    renderReceipts(false);
+  });
+});
+
+/* ---------- мобильный лист ---------- */
+var sheet = document.getElementById('sheet');
+var sheetBar = document.getElementById('sheetBar');
+function toggleSheet(){
+  var open = sheet.classList.toggle('open');
+  sheetBar.setAttribute('aria-expanded', open);
+}
+sheetBar.addEventListener('click', toggleSheet);
+sheetBar.addEventListener('keydown', function(e){
+  if (e.key==='Enter' || e.key===' '){ e.preventDefault(); toggleSheet(); }
+});
+
+/* ---------- кабинет: кнопка меняет своё содержимое ---------- */
+var cabBtn = document.getElementById('cabBtn');
+var cabState = 0;
+cabBtn.addEventListener('click', function(e){
+  if (cabState===0){
+    cabState = 1;
+    cabBtn.innerHTML = '<input type="tel" placeholder="+7 ___ ___-__-__" aria-label="Номер телефона">';
+    cabBtn.querySelector('input').focus();
+    cabBtn.querySelector('input').addEventListener('keydown', function(ev){
+      if (ev.key==='Enter' && this.value.trim().length>=10){
+        cabState = 2;
+        cabBtn.innerHTML = '<input type="text" inputmode="numeric" placeholder="Код из SMS" aria-label="Код из SMS" style="width:90px">';
+        cabBtn.querySelector('input').focus();
+        cabBtn.querySelector('input').addEventListener('keydown', function(ev2){
+          if (ev2.key==='Enter' && this.value.trim().length>=4){
+            cabState = 3;
+            cabBtn.textContent = 'Мой кабинет · '+BALANCE+' формул';
+          }
+        });
+      }
+    });
+  }
+});
+
+/* ---------- баннер сгорания формул с 27-го числа ---------- */
+var today = new Date();
+if (today.getDate() >= 27) document.getElementById('burnBanner').classList.add('show');
+
+/* ---------- reveal-on-scroll ---------- */
+var io = null;
+function observeReveals(){
+  var els = document.querySelectorAll('.reveal:not(.visible)');
+  if (reduce || !('IntersectionObserver' in window)){
+    els.forEach(function(e){ e.classList.add('visible'); });
+    return;
+  }
+  if (!io){
+    io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting){ en.target.classList.add('visible'); io.unobserve(en.target); }
+      });
+    },{threshold:.15});
+  }
+  els.forEach(function(e){ io.observe(e); });
+}
+
+/* init */
+renderTable();
+renderMenu();
+renderReceipts(false);
+observeReveals();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Локальная инфраструктура для разработки: PostgreSQL + Redis.
+# Запуск: docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: formulaedi-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: formulaedi
+      POSTGRES_PASSWORD: formulaedi
+      POSTGRES_DB: formulaedi
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formulaedi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: formulaedi-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  db-data:
+  redis-data:

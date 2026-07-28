@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Формула Еды — насыщенные варианты дизайна</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;800&family=Prata&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#191712; --panel:#221f19; --line:#332e25; --ink:#efe9dd; --dim:#a89d88; --accent:#c15a34; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Onest',sans-serif;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  header{padding:56px 0 24px}
+  .kicker{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-family:'Prata',serif;font-size:clamp(30px,4.5vw,50px);font-weight:400;margin:.35em 0 .3em;letter-spacing:-.01em}
+  header p{color:var(--dim);max-width:720px;margin:0;font-size:16px}
+  .hint{font-size:13.5px;color:var(--dim);border:1px dashed var(--line);border-radius:12px;padding:13px 17px;margin:22px 0 0;max-width:760px}
+  .grid{display:grid;gap:26px;padding:34px 0 60px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:grid;grid-template-columns:1fr}
+  @media(min-width:900px){.card{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
+  .shot{display:block;position:relative;overflow:hidden;background:#0f0d0a;max-height:440px}
+  .shot img{width:100%;display:block;object-fit:cover;object-position:top;transition:transform .5s ease}
+  .card:hover .shot img{transform:scale(1.015)}
+  .meta{padding:26px 28px 28px;display:flex;flex-direction:column;gap:10px}
+  .tag{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .card h2{font-family:'Prata',serif;font-weight:400;font-size:26px;margin:0}
+  .card p{margin:0;color:var(--dim);font-size:15px}
+  .best{display:inline-block;font-size:11.5px;font-weight:700;color:#1c1a14;background:var(--accent);border-radius:999px;padding:3px 10px;width:max-content}
+  .fonts{font-size:12.5px;color:var(--dim);opacity:.85}
+  .row{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+  .btn{display:inline-block;font-weight:600;font-size:14.5px;text-decoration:none;border-radius:999px;padding:11px 22px;background:var(--accent);color:#faf5ec}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn:hover{filter:brightness(1.06)}
+  footer{padding:8px 0 64px;color:var(--dim);font-size:14px;max-width:820px}
+  footer b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">formulaedi.ru · насыщенные версии витрины</div>
+    <h1>Три «додизайненные» версии сайта</h1>
+    <p>Это тот же сайт, что мы делаем, — те же блюда, чек и «формулы», — но с плотным, богатым дизайном: слоистые фоны, глубина, крупная типографика, много заполненных секций и щедрые фото. Три разных настроения на выбор.</p>
+    <div class="hint">Открывайте вживую (кнопка на карточке) и листайте: скриншот — вся страница целиком, но анимации, ховеры и чек живут только в браузере. Проверьте и узкое окно — мобильная вёрстка у всех своя. Вопросы для выбора — внизу.</div>
+  </header>
+
+  <div class="grid">
+    <article class="card">
+      <a class="shot" href="rich-A-garden.html" target="_blank"><img src="shots/shot-rich-A.jpeg" alt="Вариант A — Садовый стол"></a>
+      <div class="meta">
+        <span class="best">ближе всего к нынешнему бренду</span>
+        <span class="tag">Вариант A · тёплый органик-делюкс</span>
+        <h2>«Садовый стол»</h2>
+        <p>Эволюция текущего эко-стиля, но премиально и плотно: слоистый кремовый фон с ботанической графикой и зерном, крупная засечная типографика Prata, печати-ценники, глубокие карточки блюд, полностью оформленный чек. Богато и спокойно.</p>
+        <p class="fonts">Prata · Onest · олива + терракота + дерево</p>
+        <div class="row"><a class="btn" href="rich-A-garden.html" target="_blank">Открыть вживую</a></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <a class="shot" href="rich-B-market.html" target="_blank"><img src="shots/shot-rich-B.jpeg" alt="Вариант B — Аппетит-маркет"></a>
+      <div class="meta">
+        <span class="tag">Вариант B · яркий фото-вперёд</span>
+        <h2>«Аппетит-маркет»</h2>
+        <p>Самый сочный и энергичный: тёмно-зелёные блоки с томатно-горчичными акцентами, крупные фото в бенто-сетке, бегущая строка, счётчики цифр, ценники-бейджи поверх еды. Максимальный аппетит и плотность.</p>
+        <p class="fonts">Unbounded · Manrope · крем + томат + горчица</p>
+        <div class="row"><a class="btn" href="rich-B-market.html" target="_blank">Открыть вживую</a></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <a class="shot" href="rich-C-veranda.html" target="_blank"><img src="shots/shot-rich-C.jpeg" alt="Вариант C — Тёплая веранда"></a>
+      <div class="meta">
+        <span class="tag">Вариант C · уютный редакционный</span>
+        <h2>«Тёплая веранда»</h2>
+        <p>Самый тёплый и «домашний»: песок, терракота и какао, засечный Alegreya с италик-акцентами, нумерованные категории, журнальная вёрстка с крупными плитками блюд и подписями. Уютно и богато.</p>
+        <p class="fonts">Alegreya · Onest · песок + терракота + какао</p>
+        <div class="row"><a class="btn" href="rich-C-veranda.html" target="_blank">Открыть вживую</a></div>
+      </div>
+    </article>
+  </div>
+
+  <footer>
+    <b>Как выбирать:</b> не «что красивее», а какое настроение ближе бренду и вашим студентам. Все три — рабочая витрина с меню, чеком и «формулами», просто в разной подаче. Выберите <b>1–2 ближайших</b> и скажите, что поменять; можно <b>миксовать</b> (например, плотность и фон из A, сочные фото-карточки из B, тёплую типографику из C). Дальше я доведу выбранное направление и перенесу в реальный React-сайт.
+    <br><br>Фото — Creative Commons (Openverse), для продакшена заменим на собственные снимки блюд.
+  </footer>
+</div>
+</body>
+</html>

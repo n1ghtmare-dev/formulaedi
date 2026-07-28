@@ -1,0 +1,23 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+.DS_Store
+.vite/
+coverage/
+# Prisma
+apps/api/prisma/*.db
+# сохраняем сгенерированный клиент вне гита
+apps/api/src/generated/
+# рабочие артефакты агентов/скиллов
+.playwright-mcp/
+
+# локальный портативный PostgreSQL
+.localpg/
+
+# локальные скиллы/тулинг (не код проекта)
+.claude/
+.agents/
+skills-lock.json
