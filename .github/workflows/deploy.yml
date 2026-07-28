@@ -1,0 +1,31 @@
+name: Deploy formulaedi.ru
+
+# Деплой на сервер по пушу в main. Сборка идёт на раннере GitHub,
+# затем по SSH на сервере выполняется deploy/deploy.sh (git pull + build + миграции + рестарт API).
+# Требуемые секреты репозитория (Settings → Secrets and variables → Actions):
+#   SSH_HOST  — IP или домен сервера (напр. 95.163.244.138)
+#   SSH_USER  — пользователь на сервере (напр. formulaedi)
+#   SSH_PORT  — порт SSH (обычно 22)
+#   SSH_KEY   — приватный SSH-ключ деплоя (см. DEPLOY.md; НЕ пароль)
+#   DEPLOY_PATH — путь к репозиторию на сервере (напр. /var/www/formulaedi)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            bash deploy/deploy.sh
