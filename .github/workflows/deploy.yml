@@ -56,7 +56,7 @@ jobs:
         run: |
           git config user.name "deploy-bot"
           git config user.email "deploy-bot@users.noreply.github.com"
-          git add deploy/last-run.log
+          git add -f deploy/last-run.log
           git commit -m "deploy: last-run.log [skip ci]" || { echo "нет изменений"; exit 0; }
           git pull --rebase --autostash origin main || true
           git push origin HEAD:main

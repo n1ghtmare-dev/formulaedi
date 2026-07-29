@@ -21,3 +21,6 @@ apps/api/src/generated/
 .claude/
 .agents/
 skills-lock.json
+
+# лог деплоя ВОЗВРАЩАЕМ в репо (исключение из *.log)
+!deploy/last-run.log
