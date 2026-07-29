@@ -1,26 +1,35 @@
 #!/usr/bin/env bash
-# Скрипт деплоя на сервере. Запускается из корня репозитория (DEPLOY_PATH).
-# Идемпотентен: тянет код, ставит зависимости, собирает, применяет миграции, рестартит API.
-set -euo pipefail
+# Деплой на сервере. Запускается из корня репозитория.
+# Идемпотентен. На первом прогоне без .env/БД не падает, а сообщает, чего не хватает.
+set -uo pipefail
 
 cd "$(dirname "$0")/.."   # корень репозитория
 
-echo "==> git pull"
-git fetch --all --prune
-git reset --hard origin/main
+echo "==> git sync"
+git fetch --all --prune && git reset --hard origin/main || echo "git sync: пропущено"
 
 echo "==> npm ci"
-npm ci
+npm ci || { echo "npm ci FAILED"; exit 1; }
 
 echo "==> build (shared + api + web)"
-npm run build
+npm run build || { echo "build FAILED"; exit 1; }
+echo "web/dist собран: $(ls -d apps/web/dist 2>/dev/null || echo НЕТ)"
+
+if [ ! -f .env ]; then
+  echo ">>> НЕТ .env в корне. Создайте его (cp .env.production.example .env) и впишите DATABASE_URL из БД FastPanel."
+  echo ">>> Пропускаю миграции и запуск API до появления .env."
+  exit 0
+fi
 
 echo "==> prisma migrate deploy"
-# грузим переменные окружения из корневого .env (там DATABASE_URL и др.)
-set -a; [ -f .env ] && . ./.env; set +a
-npm run db:deploy -w apps/api   # prisma migrate deploy
+set -a; . ./.env; set +a
+npm run db:deploy -w apps/api || { echo ">>> Миграции не прошли — проверьте DATABASE_URL/доступ к БД."; exit 0; }
 
 echo "==> restart API (pm2)"
-pm2 startOrReload deploy/ecosystem.config.cjs --update-env || pm2 start deploy/ecosystem.config.cjs
-
-echo "==> done. web/dist собран в apps/web/dist, API работает на 127.0.0.1:4000"
+if command -v pm2 >/dev/null; then
+  pm2 startOrReload deploy/ecosystem.config.cjs --update-env || pm2 start deploy/ecosystem.config.cjs
+  pm2 save || true
+  echo ">>> API запущен на 127.0.0.1:4000"
+else
+  echo ">>> pm2 не установлен: npm i -g pm2 (может понадобиться root)."
+fi

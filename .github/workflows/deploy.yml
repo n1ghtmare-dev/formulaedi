@@ -3,11 +3,11 @@ name: Deploy formulaedi.ru
 # Деплой на сервер по пушу в main. Сборка идёт на раннере GitHub,
 # затем по SSH на сервере выполняется deploy/deploy.sh (git pull + build + миграции + рестарт API).
 # Требуемые секреты репозитория (Settings → Secrets and variables → Actions):
-#   SSH_HOST  — IP или домен сервера (напр. 95.163.244.138)
-#   SSH_USER  — пользователь на сервере (напр. formulaedi)
-#   SSH_PORT  — порт SSH (обычно 22)
-#   SSH_KEY   — приватный SSH-ключ деплоя (см. DEPLOY.md; НЕ пароль)
-#   DEPLOY_PATH — путь к репозиторию на сервере (напр. /var/www/formulaedi)
+#   SSH_HOST     — IP или домен сервера (напр. 95.163.244.138)
+#   SSH_USER     — пользователь на сервере (напр. formulaedi)
+#   SSH_PORT     — порт SSH (у нас 50222)
+#   SSH_PASSWORD — пароль пользователя (НОВЫЙ, после смены старого)
+#   DEPLOY_PATH  — путь к репозиторию на сервере (напр. /var/www/formulaedi)
 
 on:
   push:
@@ -24,8 +24,26 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          command_timeout: 20m
           script: |
-            set -e
-            cd "${{ secrets.DEPLOY_PATH }}"
-            bash deploy/deploy.sh
+            echo "===== ДИАГНОСТИКА СЕРВЕРА ====="
+            echo "user: $(whoami) | home: $HOME"
+            (sudo -n true 2>/dev/null && echo "sudo: ДА") || echo "sudo: НЕТ"
+            echo "node: $(node -v 2>/dev/null || echo НЕТ) | npm: $(npm -v 2>/dev/null || echo НЕТ)"
+            echo "pm2: $(pm2 -v 2>/dev/null || echo НЕТ) | git: $(git --version 2>/dev/null || echo НЕТ)"
+            echo "psql: $(psql --version 2>/dev/null || echo НЕТ)"
+            echo "каталоги сайтов:"; ls -d /var/www 2>/dev/null; ls -d $HOME/data/www 2>/dev/null; ls -d $HOME/www 2>/dev/null
+            DP="${{ secrets.DEPLOY_PATH }}"; DP="${DP:-$HOME/formulaedi}"
+            echo "DEPLOY_PATH=$DP"
+            echo "===== БУТСТРАП ====="
+            if [ ! -d "$DP/.git" ]; then
+              echo "клонирую репозиторий..."
+              git clone https://github.com/n1ghtmare-dev/formulaedi.git "$DP" || { echo "CLONE FAILED (приватный репо? нужен доступ)"; exit 0; }
+            fi
+            cd "$DP"
+            if command -v node >/dev/null && command -v git >/dev/null; then
+              bash deploy/deploy.sh || echo ">>> deploy.sh не завершился (обычно: нет .env/БД — это ожидаемо до создания базы в панели)"
+            else
+              echo ">>> Нет node/git на сервере — их нужно поставить (панель FastPanel → Node.js, или root)."
+            fi

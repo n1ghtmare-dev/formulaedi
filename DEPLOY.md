@@ -51,21 +51,14 @@ pm2 save && pm2 startup            # автозапуск после ребут�
 ## 4. Автодеплой через GitHub Actions
 Воркфлоу `.github/workflows/deploy.yml` уже в репозитории. Он по пушу в `main` заходит на сервер по SSH и запускает `deploy/deploy.sh` (pull → build → миграции → рестарт API).
 
-**4.1 Ключ деплоя** (на сервере):
-```bash
-ssh-keygen -t ed25519 -f ~/.ssh/deploy_formulaedi -N ""
-cat ~/.ssh/deploy_formulaedi.pub >> ~/.ssh/authorized_keys   # разрешить вход этим ключом
-cat ~/.ssh/deploy_formulaedi                                  # ПРИВАТНЫЙ ключ → в секрет SSH_KEY
-```
-
-**4.2 Секреты репозитория** (GitHub → Settings → Secrets and variables → Actions → New secret):
+**Секреты репозитория** (GitHub → Settings → Secrets and variables → Actions → New secret):
 | Секрет | Значение |
 |---|---|
 | `SSH_HOST` | `95.163.244.138` |
 | `SSH_USER` | ваш пользователь на сервере |
-| `SSH_PORT` | `22` (или ваш порт) |
-| `SSH_KEY` | приватный ключ `deploy_formulaedi` целиком |
-| `DEPLOY_PATH` | `/var/www/formulaedi` |
+| `SSH_PORT` | `50222` |
+| `SSH_PASSWORD` | пароль пользователя (НОВЫЙ, после смены старого) |
+| `DEPLOY_PATH` | путь к репозиторию (напр. `/var/www/formulaedi`); если не задать — воркфлоу возьмёт `$HOME/formulaedi` |
 
 После этого каждый `git push` в `main` → автоматический деплой. Можно запустить вручную: вкладка **Actions → Deploy formulaedi.ru → Run workflow**.
 
