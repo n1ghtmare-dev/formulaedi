@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-//  Формула Еды — схема базы данных (PostgreSQL)
+//  Формула Еды — схема базы данных (MySQL / MariaDB)
 //  Деньги хранятся в КОПЕЙКАХ (Int), чтобы избежать ошибок float.
 //  «Формулы» — бонусная валюта, целое число, 1 формула = 1 ₽.
 // ─────────────────────────────────────────────────────────────
@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -87,7 +87,7 @@ model MenuCategory {
   name      String
   slug      String   @unique
   iconEmoji String? // иконка категории (эмодзи или ключ иконки)
-  imageUrl  String?
+  imageUrl  String?  @db.Text
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -103,9 +103,9 @@ model MenuItem {
   categoryId   String
   category     MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   name         String
-  description  String?
+  description  String?  @db.Text
   priceKopecks Int // цена в копейках
-  imageUrl     String?
+  imageUrl     String?  @db.Text
   isHalal      Boolean  @default(false)
   isAvailable  Boolean  @default(true)
   sortOrder    Int      @default(0)
@@ -214,7 +214,7 @@ model Payment {
   providerPaymentId String?         @unique // id платежа в ЮKassa
   status            PaymentStatus   @default(PENDING)
   amountKopecks     Int
-  confirmationUrl   String? // ссылка на страницу оплаты
+  confirmationUrl   String? @db.Text // ссылка на страницу оплаты
   rawPayload        Json? // сырой ответ/вебхук провайдера
   createdAt         DateTime        @default(now())
   paidAt            DateTime?
@@ -252,7 +252,7 @@ model FormulaTransaction {
   balanceAfter Int? // баланс после операции (для истории)
   availableAt  DateTime? // когда начисление становится ACTIVE (для EARN — «завтра»)
   expiresAt    DateTime? // когда сгорает (1-е число следующего месяца)
-  note         String?
+  note         String?         @db.Text
   createdAt    DateTime        @default(now())
 
   @@index([userId])
@@ -267,7 +267,7 @@ model FormulaTransaction {
 
 model Setting {
   key       String   @id
-  value     String
+  value     String   @db.Text
   updatedAt DateTime @updatedAt
 
   @@map("settings")

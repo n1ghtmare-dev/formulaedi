@@ -21,9 +21,10 @@ if [ ! -f .env ]; then
   exit 0
 fi
 
-echo "==> prisma migrate deploy"
+echo "==> prisma db push (MySQL)"
 set -a; . ./.env; set +a
-npm run db:deploy -w apps/api || { echo ">>> Миграции не прошли — проверьте DATABASE_URL/доступ к БД."; exit 0; }
+npm run db:push -w apps/api || { echo ">>> db push не прошёл — проверьте DATABASE_URL/доступ к MySQL."; exit 0; }
+npm run db:seed -w apps/api || echo ">>> seed пропущен (ок, если данные уже есть)"
 
 echo "==> restart API (pm2)"
 if command -v pm2 >/dev/null; then

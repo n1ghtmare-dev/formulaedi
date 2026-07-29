@@ -36,9 +36,11 @@ if [ ! -f .env ]; then
   exit 0
 fi
 
-echo "-- prisma migrate deploy --"
+echo "-- prisma db push (MySQL) --"
 set -a; . ./.env; set +a
-npm run db:deploy -w apps/api 2>&1 | tail -6 || { echo ">>> МИГРАЦИИ FAILED — проверьте DATABASE_URL/доступ к БД."; exit 0; }
+npm run db:push -w apps/api 2>&1 | tail -8 || { echo ">>> db push FAILED — проверьте DATABASE_URL/доступ к MySQL."; exit 0; }
+echo "-- seed (идемпотентно) --"
+npm run db:seed -w apps/api 2>&1 | tail -4 || echo ">>> seed не выполнен (ок, если данные уже есть)"
 
 echo "-- pm2 --"
 if command -v pm2 >/dev/null; then
