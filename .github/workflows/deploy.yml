@@ -1,49 +1,62 @@
 name: Deploy formulaedi.ru
 
-# Деплой на сервер по пушу в main. Сборка идёт на раннере GitHub,
-# затем по SSH на сервере выполняется deploy/deploy.sh (git pull + build + миграции + рестарт API).
-# Требуемые секреты репозитория (Settings → Secrets and variables → Actions):
-#   SSH_HOST     — IP или домен сервера (напр. 95.163.244.138)
-#   SSH_USER     — пользователь на сервере (напр. formulaedi)
-#   SSH_PORT     — порт SSH (у нас 50222)
-#   SSH_PASSWORD — пароль пользователя (НОВЫЙ, после смены старого)
-#   DEPLOY_PATH  — путь к репозиторию на сервере (напр. /var/www/formulaedi)
+# По пушу в main (или вручную) раннер GitHub заходит на сервер по SSH (пароль),
+# выполняет deploy/remote-bootstrap.sh (диагностика + клон + сборка + миграции + PM2),
+# сохраняет весь вывод в deploy/last-run.log и коммитит его обратно в репозиторий —
+# чтобы результат можно было прочитать без доступа к Actions-логам.
+#
+# Секреты: SSH_HOST, SSH_USER, SSH_PORT, SSH_PASSWORD, DEPLOY_PATH (необязателен).
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'deploy/last-run.log'
   workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-formulaedi
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - uses: actions/checkout@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          command_timeout: 20m
-          script: |
-            echo "===== ДИАГНОСТИКА СЕРВЕРА ====="
-            echo "user: $(whoami) | home: $HOME"
-            (sudo -n true 2>/dev/null && echo "sudo: ДА") || echo "sudo: НЕТ"
-            echo "node: $(node -v 2>/dev/null || echo НЕТ) | npm: $(npm -v 2>/dev/null || echo НЕТ)"
-            echo "pm2: $(pm2 -v 2>/dev/null || echo НЕТ) | git: $(git --version 2>/dev/null || echo НЕТ)"
-            echo "psql: $(psql --version 2>/dev/null || echo НЕТ)"
-            echo "каталоги сайтов:"; ls -d /var/www 2>/dev/null; ls -d $HOME/data/www 2>/dev/null; ls -d $HOME/www 2>/dev/null
-            DP="${{ secrets.DEPLOY_PATH }}"; DP="${DP:-$HOME/formulaedi}"
-            echo "DEPLOY_PATH=$DP"
-            echo "===== БУТСТРАП ====="
-            if [ ! -d "$DP/.git" ]; then
-              echo "клонирую репозиторий..."
-              git clone https://github.com/n1ghtmare-dev/formulaedi.git "$DP" || { echo "CLONE FAILED (приватный репо? нужен доступ)"; exit 0; }
-            fi
-            cd "$DP"
-            if command -v node >/dev/null && command -v git >/dev/null; then
-              bash deploy/deploy.sh || echo ">>> deploy.sh не завершился (обычно: нет .env/БД — это ожидаемо до создания базы в панели)"
-            else
-              echo ">>> Нет node/git на сервере — их нужно поставить (панель FastPanel → Node.js, или root)."
-            fi
+          ref: main
+
+      - name: Install sshpass
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+
+      - name: SSH → bootstrap/deploy + capture log
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          HOST: ${{ secrets.SSH_HOST }}
+          SUSER: ${{ secrets.SSH_USER }}
+          PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set +x
+          {
+            echo "===== ЗАПУСК $(date -u '+%Y-%m-%d %H:%M UTC') · commit ${GITHUB_SHA::7} ====="
+          } > deploy/last-run.log
+          sshpass -e ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 \
+            -p "${PORT:-22}" "${SUSER}@${HOST}" \
+            "bash -s -- '${DEPLOY_PATH}'" < deploy/remote-bootstrap.sh \
+            >> deploy/last-run.log 2>&1 || echo ">>> SSH-сессия завершилась с ошибкой (см. выше — возможно закрыт парольный вход или неверные секреты)" >> deploy/last-run.log
+          echo "===== КОНЕЦ =====" >> deploy/last-run.log
+          echo "--- превью лога в Actions ---"; tail -40 deploy/last-run.log
+
+      - name: Commit log back
+        if: always()
+        run: |
+          git config user.name "deploy-bot"
+          git config user.email "deploy-bot@users.noreply.github.com"
+          git add deploy/last-run.log
+          git commit -m "deploy: last-run.log [skip ci]" || { echo "нет изменений"; exit 0; }
+          git pull --rebase --autostash origin main || true
+          git push origin HEAD:main
