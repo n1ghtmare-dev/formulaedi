@@ -1,0 +1,41 @@
+name: ВРЕМЕННО — проверка HTTPS снаружи
+
+# Изнутри LAN проверить нельзя: NAT не пускает на собственный публичный адрес,
+# а локальный DNS подменяет ответ. Смотрим глазами внешнего пользователя.
+# УДАЛИТЬ после диагностики.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: HTTP и HTTPS по домену
+        run: |
+          echo "== DNS =="
+          getent hosts formulaedi.ru || true
+          getent hosts www.formulaedi.ru || true
+
+          echo
+          echo "== HTTP :80 =="
+          curl -s -m 15 -o /dev/null -w 'код %{http_code}  редирект: %{redirect_url}\n' http://formulaedi.ru/ || echo "не отвечает"
+
+          echo
+          echo "== TCP :443 =="
+          timeout 10 bash -c 'cat < /dev/null > /dev/tcp/formulaedi.ru/443' 2>/dev/null \
+            && echo "порт открыт" || echo "порт ЗАКРЫТ"
+
+          echo
+          echo "== TLS-сертификат, который отдают снаружи =="
+          echo | timeout 15 openssl s_client -connect formulaedi.ru:443 -servername formulaedi.ru 2>&1 \
+            | grep -iE "subject=|issuer=|verify|alert|no peer certificate|CONNECTED" | head -8
+
+          echo
+          echo "== HTTPS =="
+          curl -sv -m 15 -o /dev/null https://formulaedi.ru/ 2>&1 | grep -iE "SSL|TLS|subject|issuer|HTTP/|error" | head -12
+
+          echo
+          echo "== для сравнения: соседний сайт на этом же IP =="
+          echo | timeout 15 openssl s_client -connect yesbeat.ru:443 -servername yesbeat.ru 2>&1 \
+            | grep -iE "subject=|issuer=" | head -3
