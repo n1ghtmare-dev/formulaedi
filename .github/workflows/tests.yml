@@ -36,6 +36,13 @@ jobs:
       - name: prisma generate
         run: npm run db:generate
 
+      # packages/shared обязан быть собран ДО typecheck: apps/api импортирует
+      # @formulaedi/shared, а тот резолвится в собранные .d.ts. На чистом checkout'е
+      # их нет, и typecheck падает с «Cannot find module '@formulaedi/shared'».
+      # Локально не воспроизводится — там dist остаётся от прошлых сборок.
+      - name: build shared
+        run: npm run build -w packages/shared
+
       - name: typecheck
         run: npm run typecheck
 
