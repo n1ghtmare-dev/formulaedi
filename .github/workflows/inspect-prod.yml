@@ -63,7 +63,9 @@ jobs:
           echo
           echo "===== API ====="
           curl -s --max-time 5 -o /dev/null -w 'напрямую: HTTP %{http_code}\n' http://127.0.0.1:4000/api/health || echo "напрямую: не отвечает"
-          curl -s --max-time 5 -H 'Host: formulaedi.ru' -o /dev/null -w 'через Nginx: HTTP %{http_code}\n' http://127.0.0.1/ || echo "через Nginx: не отвечает"
+          # Nginx слушает не на 127.0.0.1, а на конкретном адресе машины — берём его из системы
+          LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+          curl -s --max-time 5 -H 'Host: formulaedi.ru' -o /dev/null -w 'через Nginx: HTTP %{http_code}\n' "http://$LAN_IP/" || echo "через Nginx: не отвечает"
           echo
           echo "===== БЭКАПЫ БД ====="
           ls -lht "$HOME/_deploy_backups/formulaedi" 2>/dev/null | head -6 || echo "(бэкапов нет)"
