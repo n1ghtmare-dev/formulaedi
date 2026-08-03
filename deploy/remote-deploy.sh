@@ -86,6 +86,7 @@ else
       u.hostname,
       u.port || "3306",
       u.pathname.replace(/^\//, ""),
+      u.searchParams.get("socket") || "",
     ].join("\n"));
   ' 2>/dev/null)" || die "не смог разобрать DATABASE_URL"
 
@@ -95,21 +96,39 @@ else
     IFS= read -r DB_HOST
     IFS= read -r DB_PORT
     IFS= read -r DB_NAME
+    IFS= read -r DB_SOCKET
   } <<EOF
 $DB_PARTS
 EOF
   [ -n "$DB_NAME" ] || die "в DATABASE_URL не указано имя базы"
 
+  # Пользователь БД из FastPanel заведён как user@localhost — это в MySQL означает
+  # ТОЛЬКО unix-сокет. С --host/--port mysqldump уходит по TCP и получает
+  # «Access denied for user ...@127.0.0.1», хотя пароль верный.
+  if [ -n "$DB_SOCKET" ]; then
+    DB_CONN="--socket=$DB_SOCKET"
+  else
+    DB_CONN="--host=$DB_HOST --port=$DB_PORT"
+  fi
+
   if command -v mysqldump >/dev/null; then
+    ERRLOG="$(mktemp)"
+    # shellcheck disable=SC2086
     MYSQL_PWD="$DB_PASS" mysqldump \
-      --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
+      $DB_CONN --user="$DB_USER" \
       --single-transaction --quick --routines --no-tablespaces \
-      "$DB_NAME" 2>/dev/null | gzip > "$DUMP"
-    if [ ! -s "$DUMP" ]; then
-      rm -f "$DUMP"
-      die "дамп пустой — деплой отменён (проверь доступ к БД $DB_NAME)"
+      "$DB_NAME" 2>"$ERRLOG" | gzip > "$DUMP"
+
+    # Проверять размер файла НЕДОСТАТОЧНО: gzip от пустого потока весит ~20 байт,
+    # то есть формально «не пустой». Единственный надёжный признак успеха —
+    # завершающая строка «Dump completed», которую mysqldump пишет в самом конце.
+    if ! gzip -dc "$DUMP" 2>/dev/null | tail -3 | grep -q "Dump completed"; then
+      echo "--- вывод mysqldump ---"; head -5 "$ERRLOG"
+      rm -f "$DUMP" "$ERRLOG"
+      die "дамп не снялся — деплой отменён (проверь доступ к БД $DB_NAME)"
     fi
-    echo "бэкап: $DUMP ($(du -h "$DUMP" | cut -f1))"
+    rm -f "$ERRLOG"
+    echo "бэкап: $DUMP ($(du -h "$DUMP" | cut -f1), $(gzip -dc "$DUMP" | grep -c '^CREATE TABLE') таблиц)"
     # держим последние N
     ls -1t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +$((KEEP_BACKUPS+1)) | xargs -r rm -f
   else
