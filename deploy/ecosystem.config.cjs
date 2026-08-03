@@ -7,7 +7,11 @@ module.exports = {
     {
       name: 'formulaedi-api',
       cwd: path.join(__dirname, '..', 'apps', 'api'),
-      script: 'dist/main.js',
+      // ВНИМАНИЕ: именно dist/src/main.js, а не dist/main.js.
+      // В компиляцию попадает ещё и prisma/seed.ts, поэтому rootDir у tsc
+      // растягивается на весь apps/api и вывод получается вложенным:
+      //   dist/src/main.js  +  dist/prisma/seed.js
+      script: 'dist/src/main.js',
       instances: 1,
       exec_mode: 'fork',
       env: {

@@ -1,62 +1,107 @@
-name: Deploy formulaedi.ru
+name: Deploy PROD (formulaedi.ru)
 
-# По пушу в main (или вручную) раннер GitHub заходит на сервер по SSH (пароль),
-# выполняет deploy/remote-bootstrap.sh (диагностика + клон + сборка + миграции + PM2),
-# сохраняет весь вывод в deploy/last-run.log и коммитит его обратно в репозиторий —
-# чтобы результат можно было прочитать без доступа к Actions-логам.
+# Выкатка на боевой сервер. Раннер — ОБЛАЧНЫЙ (ubuntu-latest), ходит по SSH.
 #
-# Секреты: SSH_HOST, SSH_USER, SSH_PORT, SSH_PASSWORD, DEPLOY_PATH (необязателен).
+# Почему это работает, хотя сервер в LAN: снаружи проброшен порт 50222, он
+# приземляется на sshd сервера (проверено с облачного раннера — баннер совпал).
+# Сам порт 22 снаружи закрыт, внутренний адрес 192.168.33.3 из интернета недоступен.
+#
+# Вход — по ключу. Пароли не используются.
+#
+# ВАЖНО: на этой же машине живёт боевой yesbeat.ru (~20 ТБ медиа) и ещё ~25 сайтов.
+# Всё, что делает деплой, происходит строго внутри PROD_DEPLOY_PATH. У пользователя
+# formulaedi нет sudo, за пределы своего домашнего каталога он не дотянется.
+#
+# Триггеры:
+#   push в ветку prod  -> реальная выкатка (apply). Т.е. деплой = merge main -> prod.
+#   workflow_dispatch  -> ручной запуск, по умолчанию dry-run (ничего не пишет).
+#
+# Защита:
+#   - перед записью снимается дамп MySQL; пустой дамп -> деплой отменяется;
+#   - код обновляется git reset'ом внутри своего каталога, никаких rsync --delete;
+#   - после выкатки гоняется tests/smoke.sh — если сайт не ожил, джоб красный.
+#
+# Секреты: PROD_SSH_HOST, PROD_SSH_PORT, PROD_SSH_USER, PROD_DEPLOY_PATH, PROD_SSH_KEY.
 
 on:
   push:
-    branches: [main]
-    paths-ignore:
-      - 'deploy/last-run.log'
-  workflow_dispatch: {}
-
-permissions:
-  contents: write
+    branches: [prod]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ветка/коммит для выкатки'
+        required: false
+        default: 'prod'
+      mode:
+        description: 'dry-run = только показать | apply = реальная выкатка'
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: dry-run
 
 concurrency:
-  group: deploy-formulaedi
+  group: deploy-formulaedi-prod
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    env:
+      TARGET_REF: ${{ github.event.inputs.ref || 'prod' }}
+
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.inputs.ref || github.ref_name }}
 
-      - name: Install sshpass
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+      - name: Определить режим (push=apply, ручной=выбор)
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "MODE=apply" >> "$GITHUB_ENV"
+          else
+            echo "MODE=${{ github.event.inputs.mode }}" >> "$GITHUB_ENV"
+          fi
 
-      - name: SSH → bootstrap/deploy + capture log
+      - name: Ключ и known_hosts
         env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
-          HOST: ${{ secrets.SSH_HOST }}
-          SUSER: ${{ secrets.SSH_USER }}
-          PORT: ${{ secrets.SSH_PORT }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          KEY: ${{ secrets.PROD_SSH_KEY }}
         run: |
-          set +x
-          {
-            echo "===== ЗАПУСК $(date -u '+%Y-%m-%d %H:%M UTC') · commit ${GITHUB_SHA::7} ====="
-          } > deploy/last-run.log
-          sshpass -e ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 \
-            -p "${PORT:-22}" "${SUSER}@${HOST}" \
-            "bash -s -- '${DEPLOY_PATH}'" < deploy/remote-bootstrap.sh \
-            >> deploy/last-run.log 2>&1 || echo ">>> SSH-сессия завершилась с ошибкой (см. выше — возможно закрыт парольный вход или неверные секреты)" >> deploy/last-run.log
-          echo "===== КОНЕЦ =====" >> deploy/last-run.log
-          echo "--- превью лога в Actions ---"; tail -40 deploy/last-run.log
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Пин по ключу хоста: защищает от подмены сервера на пути.
+          ssh-keyscan -t ed25519 -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts || { echo "не удалось получить ключ хоста — сервер недоступен?"; exit 1; }
 
-      - name: Commit log back
-        if: always()
+      - name: Проверить связь
         run: |
-          git config user.name "deploy-bot"
-          git config user.email "deploy-bot@users.noreply.github.com"
-          git add -f deploy/last-run.log
-          git commit -m "deploy: last-run.log [skip ci]" || { echo "нет изменений"; exit 0; }
-          git pull --rebase --autostash origin main || true
-          git push origin HEAD:main
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+            -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
+            'echo "связь есть: $(whoami)@$(hostname)"'
+
+      - name: Выкатка (${{ env.MODE }})
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+            -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
+            "bash -s -- '${{ secrets.PROD_DEPLOY_PATH }}' '$MODE' 'origin/$TARGET_REF'" \
+            < deploy/remote-deploy.sh
+
+      # Ходим по публичному IP с заголовком Host: проверяем весь путь целиком
+      # (Nginx -> обратный прокси -> Node) и не зависим от того, переехал ли DNS.
+      - name: Smoke (только apply)
+        if: ${{ env.MODE == 'apply' }}
+        env:
+          BASE_URL: http://${{ secrets.PROD_SSH_HOST }}
+          HOST_HDR: formulaedi.ru
+        run: bash tests/smoke.sh
+
+      - name: Убрать ключ
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

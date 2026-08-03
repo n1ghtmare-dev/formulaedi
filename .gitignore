@@ -22,5 +22,12 @@ apps/api/src/generated/
 .agents/
 skills-lock.json
 
-# лог деплоя ВОЗВРАЩАЕМ в репо (исключение из *.log)
-!deploy/last-run.log
+# локальные креды (пароли БД и пр.) — НИКОГДА в репо
+deploy/creds.local.txt
+*.local.txt
+
+# приватные ключи
+*.pem
+id_*
+*_deploy
+!*_deploy.pub
