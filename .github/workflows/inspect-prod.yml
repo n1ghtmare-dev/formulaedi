@@ -24,6 +24,9 @@ jobs:
               -p "${{ secrets.PROD_SSH_PORT }}" \
               "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" bash -s <<'EOF'
           P="${{ secrets.PROD_DEPLOY_PATH }}"
+          # Node стоит через nvm в домашнем каталоге; неинтерактивный SSH его не подхватывает
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
           echo "===== КТО И ГДЕ ====="
           echo "user=$(whoami)  host=$(hostname)  path=$P"
           echo

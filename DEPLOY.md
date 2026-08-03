@@ -7,10 +7,22 @@
 
 | | |
 |---|---|
-| Сервер | `192.168.33.3` (FastPanel, LAN), SSH `:22` |
-| Панель | `https://192.168.33.3:8888` |
-| Соседний сайт | **боевой `yesbeat.ru`** на этой же машине, ~20 ТБ медиа |
+| Сервер | `192.168.33.3` (FastPanel, LAN), SSH `:22`, Ubuntu / OpenSSH 9.6 |
+| Панель | `https://cp.yesbeat.ru` (она же `192.168.33.3:8888`) |
+| Пользователь сайта | `formulaedi`, домашний каталог `/var/www/formulaedi/data` |
+| **Код (репозиторий)** | `/var/www/formulaedi/data/app` |
+| **Document root сайта** | `/var/www/formulaedi/data/app/apps/web/dist` |
+| Соседние сайты | на этой же машине **боевой `yesbeat.ru`** (~20 ТБ медиа) и ещё ~25 сайтов |
 | Раннер | self-hosted на рабочей машине в LAN — см. [deploy/RUNNER-SETUP.md](deploy/RUNNER-SETUP.md) |
+
+> ⚠️ **Репозиторий НЕ должен быть document root'ом.** В корне репозитория лежит `.env`
+> с паролем от базы и JWT-секретами, а также `.git` со всей историей. Если docroot
+> указать на репозиторий, всё это станет доступно по HTTP. Поэтому код в `data/app`,
+> а наружу отдаётся только `apps/web/dist`.
+
+Root на сервере нам не выдан (`sudo: НЕТ`), и он не нужен: Node стоит через **nvm**
+в домашнем каталоге пользователя, PM2 — свой, пользовательский. Ровно так же живут
+соседние сайты (`ordersflow`, `docsflow`, `music`).
 
 > ⚠️ На сервере крутится чужой боевой сайт. Всё, что делает деплой, происходит строго
 > внутри `PROD_DEPLOY_PATH`. Никаких `rsync --delete`, никаких операций за пределами
@@ -58,39 +70,53 @@
 
 Разовые шаги, руками по SSH. Дальше всё делает пайплайн.
 
-## 1. Сайт и база в FastPanel
+Статус: пункты 1–3 **уже выполнены**. Осталось 4–6.
 
-- Создать сайт `formulaedi.ru`, **document root** → `<путь>/apps/web/dist`.
-- Создать базу **MySQL** и пользователя. Записать имя базы / пользователя / пароль.
-- Выпустить SSL Let's Encrypt кнопкой в панели (домен должен указывать на сервер).
-- Добавить проксирование `/api/` → `http://127.0.0.1:4000` — образец в
-  [deploy/nginx-formulaedi.conf](deploy/nginx-formulaedi.conf). Для SPA обязательно
-  `try_files $uri /index.html`, иначе прямые ссылки вида `/menu` будут отдавать 404.
+## 1. ✅ Node и PM2 (сделано)
 
-## 2. Инструменты
+Ставятся в домашний каталог, без root:
 
 ```bash
-node -v          # нужен >= 20
-npm i -g pm2     # если pm2 ещё нет
-which mysqldump  # нужен для бэкапа перед деплоем
+curl -sS -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"
+nvm install 22 && nvm alias default 22
+npm i -g pm2
 ```
 
-## 3. Первый клон
+Сейчас на сервере: Node `v22.23.2`, npm, PM2 `7.0.3`, `pm2_home=/var/www/formulaedi/data/.pm2`.
+
+> Неинтерактивный SSH **не читает** `.bashrc`, поэтому любой скрипт, запускаемый
+> из пайплайна, обязан сам делать `. "$NVM_DIR/nvm.sh"` — иначе `node` не найдётся.
+> В [remote-deploy.sh](deploy/remote-deploy.sh) это уже вшито.
+
+## 2. ✅ Первый клон (сделано)
 
 Пайплайн сам не клонирует — только обновляет существующий репозиторий:
 
 ```bash
-cd <родительский каталог>
-git clone https://github.com/n1ghtmare-dev/formulaedi.git formulaedi.ru
-cd formulaedi.ru
-git checkout prod
+git clone https://github.com/n1ghtmare-dev/formulaedi.git /var/www/formulaedi/data/app
 ```
 
-## 4. Продовый `.env`
+## 3. ✅ Первая сборка (сделано)
+
+```bash
+cd /var/www/formulaedi/data/app
+npm ci
+npm run db:generate     # ОБЯЗАТЕЛЬНО перед build, см. «Грабли»
+npm run build
+```
+
+## 4. База данных
+
+В FastPanel: **Базы данных** → создать MySQL-базу и пользователя.
+Записать имя базы / пользователя / пароль.
+
+## 5. Продовый `.env`
 
 **Не в git.** Взять шаблон и заполнить:
 
 ```bash
+cd /var/www/formulaedi/data/app
 cp .env.production.example .env
 nano .env
 ```
@@ -98,17 +124,33 @@ nano .env
 Обязательно: `DATABASE_URL` из базы FastPanel и два JWT-секрета
 (`openssl rand -hex 32` для каждого).
 
-## 5. Первый запуск
+Затем создать таблицы и запустить API:
 
 ```bash
-npm ci
-npm run build
+export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"
 set -a; . ./.env; set +a
 npm run db:push  -w apps/api    # создаст таблицы
 npm run db:seed  -w apps/api    # категории и позиции меню
 pm2 start deploy/ecosystem.config.cjs
-pm2 save && pm2 startup         # автозапуск после ребута
+pm2 save
 ```
+
+Автозапуск после ребута: `pm2 startup` требует root, которого у нас нет.
+Вместо него — задание в планировщике FastPanel или пользовательский cron:
+
+```
+@reboot export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; pm2 resurrect
+```
+
+## 6. Nginx в FastPanel
+
+- **Document root** сайта → `/var/www/formulaedi/data/app/apps/web/dist`
+  (не корень репозитория — см. предупреждение выше).
+- Проксирование `/api/` → `http://127.0.0.1:4000` — образец в
+  [deploy/nginx-formulaedi.conf](deploy/nginx-formulaedi.conf).
+- Для SPA обязательно `try_files $uri /index.html`, иначе прямые ссылки
+  вида `/menu` будут отдавать 404.
+- Выпустить SSL Let's Encrypt кнопкой в панели.
 
 ## 6. Раннер и секреты
 
@@ -116,6 +158,34 @@ pm2 save && pm2 startup         # автозапуск после ребута
 четыре секрета репозитория.
 
 ---
+
+# Грабли
+
+Всё ниже реально всплыло при первой настройке — не «на всякий случай».
+
+**1. `prisma generate` обязателен перед сборкой.**
+`postinstall` от `@prisma/client` в монорепо со workspaces не находит схему в
+`apps/api` и оставляет заглушку без типов (~4 КБ вместо ~700 КБ). Сборка API
+падает с `Property 'priceKopecks' does not exist on type '{}'`. Локально это может
+не проявляться, если клиент когда-то был сгенерирован руками и остался в
+`node_modules`. В [remote-deploy.sh](deploy/remote-deploy.sh) шаг вшит.
+
+**2. Точка входа API — `dist/src/main.js`, а не `dist/main.js`.**
+В компиляцию попадает ещё и `prisma/seed.ts`, из-за чего `rootDir` растягивается
+на весь `apps/api` и вывод получается вложенным. В
+[ecosystem.config.cjs](deploy/ecosystem.config.cjs) указан правильный путь.
+
+**3. Неинтерактивный SSH не читает `.bashrc`.**
+Node стоит через nvm, поэтому каждый скрипт из пайплайна сам делает
+`. "$NVM_DIR/nvm.sh"`. Без этого — `node: command not found`.
+
+**4. CRLF.** На Windows-раннере `core.autocrlf=true`. Скрипты уезжают на Linux и
+выполняются там — с CRLF bash падает на `\r: command not found`. Закрыто правилом
+`*.sh text eol=lf` в [.gitattributes](.gitattributes).
+
+**5. Smoke обязан проверять `Content-Type`.** Если Nginx настроен неверно и отдаёт
+`index.html` на любой путь, то `/api/health` вернёт `200` с HTML внутри — и проверка
+«код 200» это засчитает, хотя API мёртв.
 
 # Что нужно знать про базу
 

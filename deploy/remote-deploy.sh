@@ -22,6 +22,13 @@ REF="${3:-origin/prod}"
 BACKUP_DIR="$HOME/_deploy_backups/formulaedi"
 KEEP_BACKUPS=10
 
+# Node на сервере стоит через nvm в домашнем каталоге (root на машине нам не дают,
+# и соседние сайты живут так же). Неинтерактивный SSH не читает .bashrc, поэтому
+# без этой строки node/npm/pm2 просто не найдутся.
+export NVM_DIR="$HOME/.nvm"
+# shellcheck disable=SC1091
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+
 say() { printf '\n===== %s =====\n' "$1"; }
 die() { echo ">>> СТОП: $1"; exit 1; }
 
@@ -118,6 +125,12 @@ echo "версия: $(git rev-parse --short HEAD)"
 
 say "ЗАВИСИМОСТИ"
 npm ci 2>&1 | tail -5 || die "npm ci упал"
+
+# ОБЯЗАТЕЛЬНО и ДО сборки. postinstall от @prisma/client в монорепо со
+# workspaces не находит схему в apps/api и оставляет заглушку без типов —
+# тогда сборка API падает на «Property 'priceKopecks' does not exist on type '{}'».
+say "PRISMA CLIENT"
+npm run db:generate 2>&1 | tail -3 || die "prisma generate не прошёл"
 
 say "СБОРКА"
 npm run build 2>&1 | tail -10 || die "build упал"

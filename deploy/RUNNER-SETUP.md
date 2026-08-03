@@ -79,8 +79,11 @@ Settings → Secrets and variables → Actions → New repository secret:
 |---|---|
 | `PROD_SSH_HOST` | `192.168.33.3` |
 | `PROD_SSH_PORT` | `22` |
-| `PROD_SSH_USER` | пользователь на сервере |
-| `PROD_DEPLOY_PATH` | путь к репозиторию, напр. `/var/www/formulaedi/data/www/formulaedi.ru` |
+| `PROD_SSH_USER` | `formulaedi` (пользователь сайта в FastPanel) |
+| `PROD_DEPLOY_PATH` | `/var/www/formulaedi/data/app` |
+
+Путь — это **репозиторий**, а не document root сайта. Наружу Nginx отдаёт только
+`.../app/apps/web/dist`; сам репозиторий с `.env` и `.git` по HTTP недоступен.
 
 Адрес и путь держим в секретах, потому что репозиторий **публичный** — внутреннюю
 топологию сети наружу не светим.
