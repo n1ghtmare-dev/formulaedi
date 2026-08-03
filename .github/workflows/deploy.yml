@@ -1,14 +1,16 @@
 name: Deploy PROD (formulaedi.ru)
 
-# Выкатка на боевой сервер 192.168.33.3 (FastPanel, LAN).
+# Выкатка на боевой сервер. Раннер — ОБЛАЧНЫЙ (ubuntu-latest), ходит по SSH.
 #
-# Раннер — SELF-HOSTED и стоит НА САМОМ СЕРВЕРЕ, под пользователем formulaedi.
-# Поэтому деплой полностью локальный: ни SSH, ни ключей, ни паролей в секретах.
-# Раннер сам достучится до GitHub наружу по HTTPS — входящие порты открывать не надо.
+# Почему это работает, хотя сервер в LAN: снаружи проброшен порт 50222, он
+# приземляется на sshd сервера (проверено с облачного раннера — баннер совпал).
+# Сам порт 22 снаружи закрыт, внутренний адрес 192.168.33.3 из интернета недоступен.
+#
+# Вход — по ключу. Пароли не используются.
 #
 # ВАЖНО: на этой же машине живёт боевой yesbeat.ru (~20 ТБ медиа) и ещё ~25 сайтов.
 # Всё, что делает деплой, происходит строго внутри PROD_DEPLOY_PATH. У пользователя
-# formulaedi нет sudo, за пределы своего домашнего каталога он и не дотянется.
+# formulaedi нет sudo, за пределы своего домашнего каталога он не дотянется.
 #
 # Триггеры:
 #   push в ветку prod  -> реальная выкатка (apply). Т.е. деплой = merge main -> prod.
@@ -19,7 +21,7 @@ name: Deploy PROD (formulaedi.ru)
 #   - код обновляется git reset'ом внутри своего каталога, никаких rsync --delete;
 #   - после выкатки гоняется tests/smoke.sh — если сайт не ожил, джоб красный.
 #
-# Секреты репозитория: PROD_DEPLOY_PATH.
+# Секреты: PROD_SSH_HOST, PROD_SSH_PORT, PROD_SSH_USER, PROD_DEPLOY_PATH, PROD_SSH_KEY.
 
 on:
   push:
@@ -45,7 +47,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, linux, formulaedi]
+    runs-on: ubuntu-latest
 
     env:
       TARGET_REF: ${{ github.event.inputs.ref || 'prod' }}
@@ -63,15 +65,43 @@ jobs:
             echo "MODE=${{ github.event.inputs.mode }}" >> "$GITHUB_ENV"
           fi
 
-      - name: Выкатка (${{ env.MODE }})
-        run: bash deploy/remote-deploy.sh "${{ secrets.PROD_DEPLOY_PATH }}" "$MODE" "origin/$TARGET_REF"
+      - name: Ключ и known_hosts
+        env:
+          KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Пин по ключу хоста: защищает от подмены сервера на пути.
+          ssh-keyscan -t ed25519 -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts || { echo "не удалось получить ключ хоста — сервер недоступен?"; exit 1; }
 
-      # Ходим по домену, но через 127.0.0.1 — чтобы проверять весь путь целиком
-      # (Nginx -> обратный прокси -> Node), а не только Node напрямую. И чтобы
-      # проверка не зависела от того, переехал ли уже DNS.
+      - name: Проверить связь
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+            -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
+            'echo "связь есть: $(whoami)@$(hostname)"'
+
+      - name: Выкатка (${{ env.MODE }})
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+            -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
+            "bash -s -- '${{ secrets.PROD_DEPLOY_PATH }}' '$MODE' 'origin/$TARGET_REF'" \
+            < deploy/remote-deploy.sh
+
+      # Ходим по публичному IP с заголовком Host: проверяем весь путь целиком
+      # (Nginx -> обратный прокси -> Node) и не зависим от того, переехал ли DNS.
       - name: Smoke (только apply)
         if: ${{ env.MODE == 'apply' }}
         env:
-          BASE_URL: http://127.0.0.1
+          BASE_URL: http://${{ secrets.PROD_SSH_HOST }}
           HOST_HDR: formulaedi.ru
         run: bash tests/smoke.sh
+
+      - name: Убрать ключ
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

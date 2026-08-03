@@ -4,21 +4,32 @@ name: Inspect PROD (read-only)
 # НИЧЕГО не пишет и не перезапускает. Только ручной запуск.
 #
 # Полезно, когда деплой упал и надо понять, в каком состоянии сервер.
-# Раннер стоит на самом сервере, поэтому всё выполняется локально.
 
 on:
   workflow_dispatch:
 
 jobs:
   inspect:
-    runs-on: [self-hosted, linux, formulaedi]
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Осмотр
+      - name: Ключ и known_hosts
         env:
-          P: ${{ secrets.PROD_DEPLOY_PATH }}
+          KEY: ${{ secrets.PROD_SSH_KEY }}
         run: |
-          # Node стоит через nvm в домашнем каталоге
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -t ed25519 -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Осмотр
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+            -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" bash -s <<'EOF'
+          P="${{ secrets.PROD_DEPLOY_PATH }}"
+          # Node стоит через nvm; неинтерактивный SSH не читает .bashrc
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
 
@@ -51,11 +62,16 @@ jobs:
           pm2 list 2>/dev/null || echo "(pm2 недоступен)"
           echo
           echo "===== API ====="
-          curl -s --max-time 5 -o /dev/null -w 'health: HTTP %{http_code}\n' http://127.0.0.1:4000/api/health || echo "health: не отвечает"
-          curl -s --max-time 5 -H 'Host: formulaedi.ru' -o /dev/null -w 'через Nginx: HTTP %{http_code}\n' http://127.0.0.1/ || echo "Nginx: не отвечает"
+          curl -s --max-time 5 -o /dev/null -w 'напрямую: HTTP %{http_code}\n' http://127.0.0.1:4000/api/health || echo "напрямую: не отвечает"
+          curl -s --max-time 5 -H 'Host: formulaedi.ru' -o /dev/null -w 'через Nginx: HTTP %{http_code}\n' http://127.0.0.1/ || echo "через Nginx: не отвечает"
           echo
           echo "===== БЭКАПЫ БД ====="
           ls -lht "$HOME/_deploy_backups/formulaedi" 2>/dev/null | head -6 || echo "(бэкапов нет)"
           echo
           echo "===== ПОСЛЕДНИЕ ЛОГИ API ====="
           pm2 logs formulaedi-api --lines 15 --nostream 2>/dev/null || echo "(логов нет)"
+          EOF
+
+      - name: Убрать ключ
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
