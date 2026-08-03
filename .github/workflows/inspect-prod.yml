@@ -3,30 +3,25 @@ name: Inspect PROD (read-only)
 # Служебный READ-ONLY осмотр боевого сервера: что стоит, что запущено, сколько места.
 # НИЧЕГО не пишет и не перезапускает. Только ручной запуск.
 #
-# Полезно, когда деплой упал и надо понять, в каком состоянии сервер,
-# не заходя туда руками.
+# Полезно, когда деплой упал и надо понять, в каком состоянии сервер.
+# Раннер стоит на самом сервере, поэтому всё выполняется локально.
 
 on:
   workflow_dispatch:
 
 jobs:
   inspect:
-    runs-on: [self-hosted, windows, formulaedi]
-    defaults:
-      run:
-        shell: bash
+    runs-on: [self-hosted, linux, formulaedi]
 
     steps:
       - name: Осмотр
+        env:
+          P: ${{ secrets.PROD_DEPLOY_PATH }}
         run: |
-          ssh -i "$HOME/.ssh/formulaedi_deploy" \
-              -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
-              -p "${{ secrets.PROD_SSH_PORT }}" \
-              "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" bash -s <<'EOF'
-          P="${{ secrets.PROD_DEPLOY_PATH }}"
-          # Node стоит через nvm в домашнем каталоге; неинтерактивный SSH его не подхватывает
+          # Node стоит через nvm в домашнем каталоге
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+
           echo "===== КТО И ГДЕ ====="
           echo "user=$(whoami)  host=$(hostname)  path=$P"
           echo
@@ -36,7 +31,6 @@ jobs:
           echo "pm2=$(pm2 -v 2>/dev/null || echo НЕТ)"
           echo "git=$(git --version 2>/dev/null || echo НЕТ)"
           echo "mysqldump=$(command -v mysqldump || echo НЕТ)"
-          echo "nginx=$(command -v nginx || echo НЕТ)"
           echo
           echo "===== ДИСК ====="
           df -h "$P" 2>/dev/null | head -2
@@ -58,10 +52,10 @@ jobs:
           echo
           echo "===== API ====="
           curl -s --max-time 5 -o /dev/null -w 'health: HTTP %{http_code}\n' http://127.0.0.1:4000/api/health || echo "health: не отвечает"
+          curl -s --max-time 5 -H 'Host: formulaedi.ru' -o /dev/null -w 'через Nginx: HTTP %{http_code}\n' http://127.0.0.1/ || echo "Nginx: не отвечает"
           echo
           echo "===== БЭКАПЫ БД ====="
           ls -lht "$HOME/_deploy_backups/formulaedi" 2>/dev/null | head -6 || echo "(бэкапов нет)"
           echo
           echo "===== ПОСЛЕДНИЕ ЛОГИ API ====="
           pm2 logs formulaedi-api --lines 15 --nostream 2>/dev/null || echo "(логов нет)"
-          EOF

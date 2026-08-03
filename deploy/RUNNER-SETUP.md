@@ -1,110 +1,93 @@
 # Установка self-hosted раннера GitHub Actions
 
-Разовая настройка. Делается на рабочей машине в LAN (`BSQL`, Windows Server), с которой
-есть доступ к серверу `192.168.33.3`.
+Разовая настройка. Раннер ставится **на сам сервер** `192.168.33.3`, под пользователем
+`formulaedi`, в его домашний каталог. Root не нужен.
 
-## Зачем именно self-hosted
+## Зачем self-hosted и почему на сервере
 
 `192.168.33.3` — приватный адрес внутри LAN. Облачные раннеры GitHub (`ubuntu-latest`)
-до него не достучатся в принципе, а публичный SSH сервера закрыт: порт `22` снаружи не
-отвечает, `50222` проброшен для соседнего сайта `yesbeat.ru`.
+до него не достучатся, а публичный SSH сервера закрыт.
 
-Поэтому деплой гоняет раннер на машине, которая в этой же сети. Бонусом: SSH-пароль
-не нужен вовсе — ключ лежит локально и в секреты GitHub не попадает.
+Раннер прямо на сервере даёт максимум простоты: деплой становится локальным — ни SSH,
+ни ключей, ни паролей в секретах. Наружу открывать ничего не надо: раннер сам держит
+исходящее HTTPS-соединение с GitHub.
 
-`tests.yml` при этом остаётся на облачном раннере — ему сервер не нужен.
+`tests.yml` при этом остаётся на облачном раннере — ему сервер не нужен, только npm.
 
-## 1. Ключ для SSH
+## 1. Регистрация
 
-Пара уже сгенерирована на машине:
+Нужны права **Admin** на репозитории (Write недостаточно).
 
-```
-~/.ssh/formulaedi_deploy       ← приватный, остаётся здесь, никуда не копируется
-~/.ssh/formulaedi_deploy.pub   ← публичный, уезжает на сервер
-```
-
-Публичный ключ надо добавить на сервере в `~/.ssh/authorized_keys` того пользователя,
-под которым деплоим:
-
-```bash
-mkdir -p ~/.ssh && chmod 700 ~/.ssh
-echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIInj9edtLLcXhVX1lVALkdCz2IcVhR4WuJ8R7fgNlONw formulaedi-deploy@github-runner' >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-```
-
-Проверка с этой машины:
-
-```bash
-ssh -i ~/.ssh/formulaedi_deploy -p 22 <USER>@192.168.33.3 'whoami; hostname'
-```
-
-## 2. Регистрация раннера
-
-Нужны права **Admin** на репозитории `n1ghtmare-dev/formulaedi` (Write недостаточно).
-
-1. GitHub → репозиторий → **Settings** → **Actions** → **Runners** → **New self-hosted runner** → **Windows**.
+1. GitHub → **Settings** → **Actions** → **Runners** → **New self-hosted runner** → **Linux**.
 2. Скопировать `--token` из показанной команды (живёт 1 час).
-3. На машине, в PowerShell:
+3. На сервере под `formulaedi`:
 
-```powershell
-mkdir C:\actions-runner; cd C:\actions-runner
-$v = "2.322.0"
-Invoke-WebRequest -Uri "https://github.com/actions/runner/releases/download/v$v/actions-runner-win-x64-$v.zip" -OutFile runner.zip
-Expand-Archive -Path runner.zip -DestinationPath . -Force
+```bash
+mkdir -p ~/actions-runner && cd ~/actions-runner
+curl -sSLo runner.tar.gz \
+  https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-linux-x64-2.336.0.tar.gz
+tar xzf runner.tar.gz && rm runner.tar.gz
 
-.\config.cmd --url https://github.com/n1ghtmare-dev/formulaedi `
-             --token <ТОКЕН> `
-             --name bsql-formulaedi `
-             --labels self-hosted,windows,formulaedi `
-             --work _work `
-             --runasservice
+./config.sh --url https://github.com/n1ghtmare-dev/formulaedi \
+            --token <ТОКЕН> \
+            --name formulaedi-prod \
+            --labels self-hosted,linux,formulaedi \
+            --work _work \
+            --unattended --replace
 ```
 
-Метки `self-hosted,windows,formulaedi` обязаны совпадать с `runs-on` в
+Метки `self-hosted,linux,formulaedi` обязаны совпадать с `runs-on` в
 [deploy.yml](../.github/workflows/deploy.yml) — иначе джоб будет вечно висеть в очереди.
 
-4. Проверить, что служба поднялась:
+## 2. Автозапуск
 
-```powershell
-Get-Service 'actions.runner.*' | Select-Object Name, Status
+Штатный `./svc.sh install` ставит systemd-юнит и требует root, которого нет.
+Вместо него — `@reboot` в пользовательском crontab (тем же способом поднимается PM2):
+
+```bash
+( crontab -l 2>/dev/null; echo "@reboot cd \$HOME/actions-runner && nohup ./run.sh > \$HOME/actions-runner/runner.log 2>&1 &" ) | crontab -
+```
+
+Запуск прямо сейчас, не дожидаясь перезагрузки:
+
+```bash
+cd ~/actions-runner && nohup ./run.sh > ~/actions-runner/runner.log 2>&1 &
+```
+
+Проверка:
+
+```bash
+pgrep -af Runner.Listener      # процесс живой
+tail -5 ~/actions-runner/runner.log
 ```
 
 В GitHub → Settings → Actions → Runners раннер должен гореть зелёным `Idle`.
 
 ## 3. Секреты репозитория
 
-Settings → Secrets and variables → Actions → New repository secret:
+Settings → Secrets and variables → Actions:
 
 | Секрет | Значение |
 |---|---|
-| `PROD_SSH_HOST` | `192.168.33.3` |
-| `PROD_SSH_PORT` | `22` |
-| `PROD_SSH_USER` | `formulaedi` (пользователь сайта в FastPanel) |
 | `PROD_DEPLOY_PATH` | `/var/www/formulaedi/data/app` |
 
-Путь — это **репозиторий**, а не document root сайта. Наружу Nginx отдаёт только
-`.../app/apps/web/dist`; сам репозиторий с `.env` и `.git` по HTTP недоступен.
+Всё. SSH-секреты новому пайплайну не нужны — деплой локальный.
 
-Адрес и путь держим в секретах, потому что репозиторий **публичный** — внутреннюю
+Путь — это **репозиторий**, а не document root сайта. Наружу отдаётся только
+собранная витрина, и раздаёт её сам API.
+
+Адрес сервера держим в секрете, потому что репозиторий **публичный** — внутреннюю
 топологию сети наружу не светим.
-
-Приватный ключ в секреты **не кладём** — он и так на раннере.
-
-## 4. Требования к машине с раннером
-
-- Node 20+ и git — есть.
-- `ssh` — есть (`C:\Windows\System32\OpenSSH\ssh.exe`).
-- Bash — из состава Git for Windows; воркфлоу используют `shell: bash`.
-- Машина должна быть включена в момент деплоя. Раннер стоит службой, поэтому переживает
-  перезагрузку.
 
 ## Грабли
 
-- **Перевод строк.** На Windows `core.autocrlf=true`, и без [.gitattributes](../.gitattributes)
-  скрипты в `deploy/` приезжали бы в рабочую копию с CRLF. Они уходят на Linux через
-  `ssh 'bash -s'` — с CRLF bash падает с `\r: command not found`. Правило `*.sh text eol=lf`
-  это закрывает; трогать его не надо.
 - **Метки раннера.** Опечатка в labels = джоб в очереди навсегда, без внятной ошибки.
-- **Соседний прод.** На `192.168.33.3` живёт боевой `yesbeat.ru` с ~20 ТБ медиа.
-  Все скрипты работают строго внутри `PROD_DEPLOY_PATH`. Ничего с `--delete` и ничего
-  за пределами каталога.
+- **Раннер не видит nvm.** Он запускается не через login shell, поэтому `node` из
+  `~/.nvm` в PATH не попадает. Все скрипты деплоя подгружают nvm сами — трогать это
+  не надо. Сам раннер для своих нужд использует встроенный Node, внешний ему не нужен.
+- **Соседний прод.** На машине живёт боевой `yesbeat.ru`. У пользователя `formulaedi`
+  нет sudo, так что за пределы своего домашнего каталога деплой не дотянется даже при
+  ошибке в скрипте.
+- **Раннер и деплой — разные каталоги.** Раннер клонирует репозиторий в
+  `~/actions-runner/_work/...` (там лежат только скрипты, которыми он работает),
+  а разворачивается сайт в `~/app`. Путать их не надо.

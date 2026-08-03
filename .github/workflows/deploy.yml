@@ -2,26 +2,24 @@ name: Deploy PROD (formulaedi.ru)
 
 # Выкатка на боевой сервер 192.168.33.3 (FastPanel, LAN).
 #
-# ВАЖНО: на этом же сервере живёт боевой yesbeat.ru (~20 ТБ медиа в files/).
-# Мы работаем строго внутри своего каталога (PROD_DEPLOY_PATH) и ничего за его
-# пределами не трогаем.
+# Раннер — SELF-HOSTED и стоит НА САМОМ СЕРВЕРЕ, под пользователем formulaedi.
+# Поэтому деплой полностью локальный: ни SSH, ни ключей, ни паролей в секретах.
+# Раннер сам достучится до GitHub наружу по HTTPS — входящие порты открывать не надо.
 #
-# Раннер — SELF-HOSTED на рабочей машине в LAN. Причина: 192.168.33.3 — приватный
-# адрес, облачные раннеры GitHub до него не достучатся, а публичный SSH сервера
-# закрыт (порт 22 снаружи не отвечает).
+# ВАЖНО: на этой же машине живёт боевой yesbeat.ru (~20 ТБ медиа) и ещё ~25 сайтов.
+# Всё, что делает деплой, происходит строго внутри PROD_DEPLOY_PATH. У пользователя
+# formulaedi нет sudo, за пределы своего домашнего каталога он и не дотянется.
 #
 # Триггеры:
 #   push в ветку prod  -> реальная выкатка (apply). Т.е. деплой = merge main -> prod.
 #   workflow_dispatch  -> ручной запуск, по умолчанию dry-run (ничего не пишет).
 #
 # Защита:
-#   - перед записью делается бэкап дампа MySQL; пустой дамп -> деплой отменяется;
+#   - перед записью снимается дамп MySQL; пустой дамп -> деплой отменяется;
 #   - код обновляется git reset'ом внутри своего каталога, никаких rsync --delete;
 #   - после выкатки гоняется tests/smoke.sh — если сайт не ожил, джоб красный.
 #
-# Секреты репозитория: PROD_SSH_HOST, PROD_SSH_PORT, PROD_SSH_USER, PROD_DEPLOY_PATH.
-# Приватный SSH-ключ лежит на самом раннере (~/.ssh/formulaedi_deploy) и в секреты
-# не кладётся.
+# Секреты репозитория: PROD_DEPLOY_PATH.
 
 on:
   push:
@@ -47,13 +45,9 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, windows, formulaedi]
-    defaults:
-      run:
-        shell: bash
+    runs-on: [self-hosted, linux, formulaedi]
 
     env:
-      SSH_KEY: ~/.ssh/formulaedi_deploy
       TARGET_REF: ${{ github.event.inputs.ref || 'prod' }}
 
     steps:
@@ -69,32 +63,15 @@ jobs:
             echo "MODE=${{ github.event.inputs.mode }}" >> "$GITHUB_ENV"
           fi
 
-      - name: Проверить ключ и связь с сервером
-        run: |
-          if [ ! -f "$HOME/.ssh/formulaedi_deploy" ]; then
-            echo "СТОП: нет приватного ключа $HOME/.ssh/formulaedi_deploy на раннере."
-            echo "См. deploy/RUNNER-SETUP.md"
-            exit 1
-          fi
-          chmod 600 "$HOME/.ssh/formulaedi_deploy" 2>/dev/null || true
-          ssh -i "$HOME/.ssh/formulaedi_deploy" \
-              -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
-              -p "${{ secrets.PROD_SSH_PORT }}" \
-              "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
-              'echo "связь есть: $(whoami)@$(hostname)"'
-
       - name: Выкатка (${{ env.MODE }})
-        run: |
-          ssh -i "$HOME/.ssh/formulaedi_deploy" \
-              -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
-              -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
-              -p "${{ secrets.PROD_SSH_PORT }}" \
-              "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
-              "bash -s -- '${{ secrets.PROD_DEPLOY_PATH }}' '$MODE' 'origin/$TARGET_REF'" \
-              < deploy/remote-deploy.sh
+        run: bash deploy/remote-deploy.sh "${{ secrets.PROD_DEPLOY_PATH }}" "$MODE" "origin/$TARGET_REF"
 
-      - name: Smoke по сайту (только apply)
+      # Ходим по домену, но через 127.0.0.1 — чтобы проверять весь путь целиком
+      # (Nginx -> обратный прокси -> Node), а не только Node напрямую. И чтобы
+      # проверка не зависела от того, переехал ли уже DNS.
+      - name: Smoke (только apply)
         if: ${{ env.MODE == 'apply' }}
         env:
-          BASE_URL: https://formulaedi.ru
-        run: bash tests/smoke.sh "$BASE_URL"
+          BASE_URL: http://127.0.0.1
+          HOST_HDR: formulaedi.ru
+        run: bash tests/smoke.sh
