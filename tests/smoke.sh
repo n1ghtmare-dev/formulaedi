@@ -33,8 +33,11 @@ CURL_OPTS=(-s -L --max-time "$TIMEOUT")
 [ "${INSECURE:-}" = "1" ] && CURL_OPTS+=(-k)
 [ -n "${HOST_HDR:-}" ] && CURL_OPTS+=(-H "Host: ${HOST_HDR}")
 
-# Признаки того, что бэкенд лежит или сыпет ошибками наружу
-ERR_RE='Cannot GET /|<title>50[0-9]|Internal Server Error|at [A-Za-z]+\.[A-Za-z]+ \(/|node_modules/@nestjs|PrismaClientKnownRequestError|ECONNREFUSED'
+# Признаки того, что бэкенд лежит или сыпет наружу внутренности.
+# Сюда НЕЛЬЗЯ добавлять «Cannot GET /» — это штатное тело 404 от Nest, и проверка
+# «несуществующий маршрут отвечает JSON-404» ловила бы сама себя.
+# Подмену витрины на что-то чужое отлавливают проверки Content-Type и маркера.
+ERR_RE='<title>50[0-9]|Internal Server Error|at [A-Za-z]+\.[A-Za-z]+ \(/|node_modules/@nestjs|PrismaClientKnownRequestError|ECONNREFUSED'
 
 pass=0; fail=0
 
@@ -107,8 +110,12 @@ check "API /api/health"              "/api/health"  "200"     json
 # Публичное меню — основной эндпоинт витрины
 check "API /api/menu"                "/api/menu"    "200 304" json
 
-# Закрытый эндпоинт без токена обязан ответить 401/403, а не 500 и не 200
-check "API /api/orders (без токена)" "/api/orders"  "401 403" json
+# Настройки магазина (адрес, часы работы, проценты формул)
+check "API /api/settings"            "/api/settings" "200 304" json
+
+# Несуществующий маршрут под /api обязан вернуть JSON-404 от Nest.
+# Если прилетит HTML — значит витрина перехватывает /api и exclude сломан.
+check "API 404 остаётся JSON"        "/api/__нет-такого__" "404" json
 
 echo "== итог: OK=$pass FAIL=$fail"
 [ "$fail" -eq 0 ] || exit 1
