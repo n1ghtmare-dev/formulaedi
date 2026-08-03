@@ -1,0 +1,64 @@
+name: Inspect PROD (read-only)
+
+# Служебный READ-ONLY осмотр боевого сервера: что стоит, что запущено, сколько места.
+# НИЧЕГО не пишет и не перезапускает. Только ручной запуск.
+#
+# Полезно, когда деплой упал и надо понять, в каком состоянии сервер,
+# не заходя туда руками.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, windows, formulaedi]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Осмотр
+        run: |
+          ssh -i "$HOME/.ssh/formulaedi_deploy" \
+              -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
+              -p "${{ secrets.PROD_SSH_PORT }}" \
+              "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" bash -s <<'EOF'
+          P="${{ secrets.PROD_DEPLOY_PATH }}"
+          echo "===== КТО И ГДЕ ====="
+          echo "user=$(whoami)  host=$(hostname)  path=$P"
+          echo
+          echo "===== ИНСТРУМЕНТЫ ====="
+          echo "node=$(node -v 2>/dev/null || echo НЕТ)"
+          echo "npm=$(npm -v 2>/dev/null || echo НЕТ)"
+          echo "pm2=$(pm2 -v 2>/dev/null || echo НЕТ)"
+          echo "git=$(git --version 2>/dev/null || echo НЕТ)"
+          echo "mysqldump=$(command -v mysqldump || echo НЕТ)"
+          echo "nginx=$(command -v nginx || echo НЕТ)"
+          echo
+          echo "===== ДИСК ====="
+          df -h "$P" 2>/dev/null | head -2
+          echo
+          echo "===== РЕПОЗИТОРИЙ ====="
+          if [ -d "$P/.git" ]; then
+            cd "$P"
+            echo "версия: $(git rev-parse --short HEAD)  ветка: $(git rev-parse --abbrev-ref HEAD)"
+            echo "последний коммит: $(git log -1 --format='%ad %s' --date=short)"
+            echo "локальные изменения:"; git status --short | head -10
+            echo ".env: $([ -f .env ] && echo есть || echo НЕТ)"
+            echo "web/dist: $([ -d apps/web/dist ] && du -sh apps/web/dist | cut -f1 || echo НЕТ)"
+          else
+            echo "репозиторий не склонирован в $P"
+          fi
+          echo
+          echo "===== PM2 ====="
+          pm2 list 2>/dev/null || echo "(pm2 недоступен)"
+          echo
+          echo "===== API ====="
+          curl -s --max-time 5 -o /dev/null -w 'health: HTTP %{http_code}\n' http://127.0.0.1:4000/api/health || echo "health: не отвечает"
+          echo
+          echo "===== БЭКАПЫ БД ====="
+          ls -lht "$HOME/_deploy_backups/formulaedi" 2>/dev/null | head -6 || echo "(бэкапов нет)"
+          echo
+          echo "===== ПОСЛЕДНИЕ ЛОГИ API ====="
+          pm2 logs formulaedi-api --lines 15 --nostream 2>/dev/null || echo "(логов нет)"
+          EOF

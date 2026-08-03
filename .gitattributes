@@ -1,0 +1,22 @@
+# Нормализация переводов строк.
+#
+# ЗАЧЕМ: на Windows core.autocrlf=true и при checkout'е файлы получают CRLF.
+# Shell-скрипты из деплоя уезжают на Linux-сервер и выполняются там — с CRLF
+# bash падает с «\r: command not found». Поэтому для них жёстко фиксируем LF
+# независимо от настроек машины.
+
+* text=auto
+
+*.sh      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.cjs     text eol=lf
+Dockerfile text eol=lf
+.env.*    text eol=lf
+
+# Бинарники не трогать
+*.pdf     binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.woff2   binary

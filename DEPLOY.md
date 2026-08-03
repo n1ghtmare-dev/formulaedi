@@ -1,70 +1,146 @@
-# Деплой formulaedi.ru (FastPanel + GitHub Actions)
+# Деплой formulaedi.ru
 
-Домен `formulaedi.ru` уже указывает на сервер `95.163.244.138`. Ниже — разовая настройка сервера и автодеплой по пушу в `main`.
+Стек на сервере: **Node 20+**, **MySQL/MariaDB**, **PM2** (демон API), **Nginx** (статика + прокси `/api`).
+Схема: Nginx отдаёт `apps/web/dist` и проксирует `/api` → `127.0.0.1:4000` (NestJS).
 
-Стек на сервере: **Node 20+**, **PostgreSQL**, **PM2** (демон API), **Nginx** (статика + прокси `/api`).
-Схема: Nginx отдаёт `apps/web/dist` и проксирует `/api` → `127.0.0.1:4000` (Node/NestJS).
+## Где что живёт
+
+| | |
+|---|---|
+| Сервер | `192.168.33.3` (FastPanel, LAN), SSH `:22` |
+| Панель | `https://192.168.33.3:8888` |
+| Соседний сайт | **боевой `yesbeat.ru`** на этой же машине, ~20 ТБ медиа |
+| Раннер | self-hosted на рабочей машине в LAN — см. [deploy/RUNNER-SETUP.md](deploy/RUNNER-SETUP.md) |
+
+> ⚠️ На сервере крутится чужой боевой сайт. Всё, что делает деплой, происходит строго
+> внутри `PROD_DEPLOY_PATH`. Никаких `rsync --delete`, никаких операций за пределами
+> своего каталога.
+
+## Как устроен деплой
+
+```
+   push в main ──► tests.yml (typecheck + build)        облачный раннер, прод не трогает
+                        │
+                        ▼
+   merge main → prod ──► deploy.yml                     self-hosted раннер в LAN
+                        │
+                        ├─ бэкап дампа MySQL (пустой дамп → стоп)
+                        ├─ ssh на .3 → deploy/remote-deploy.sh
+                        │     git reset → npm ci → build → prisma db push → seed → pm2 reload
+                        └─ tests/smoke.sh по https://formulaedi.ru
+```
+
+**Деплой = merge `main` → `prod`.** Пуш в `main` ничего не выкатывает, только прогоняет тесты.
+
+Ручной запуск: Actions → *Deploy PROD (formulaedi.ru)* → Run workflow.
+По умолчанию там **dry-run** — он только показывает, какие коммиты и файлы уехали бы,
+и ничего не пишет. Реальная выкатка — выбрать `apply`.
+
+Отдельно есть *Inspect PROD (read-only)* — осмотр сервера (что стоит, что запущено,
+место на диске, логи PM2) без единой записи. Пригодится, когда деплой упал.
+
+## Файлы
+
+| Файл | Что делает |
+|---|---|
+| [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | выкатка на прод |
+| [.github/workflows/tests.yml](.github/workflows/tests.yml) | гейт: typecheck + build + синтаксис bash |
+| [.github/workflows/inspect-prod.yml](.github/workflows/inspect-prod.yml) | read-only осмотр сервера |
+| [deploy/remote-deploy.sh](deploy/remote-deploy.sh) | выполняется НА СЕРВЕРЕ: бэкап → код → сборка → БД → PM2 |
+| [deploy/ecosystem.config.cjs](deploy/ecosystem.config.cjs) | PM2-конфиг API |
+| [deploy/nginx-formulaedi.conf](deploy/nginx-formulaedi.conf) | образец конфига Nginx |
+| [tests/smoke.sh](tests/smoke.sh) | post-deploy проверка сайта по HTTP |
+| [deploy/RUNNER-SETUP.md](deploy/RUNNER-SETUP.md) | установка раннера, ключи, секреты |
 
 ---
 
-## 0. Безопасность (сначала)
-- **Смените пароль**, который был отправлен в переписке.
-- Для CI используем **SSH-ключ деплоя**, а не пароль.
+# Первичная настройка сервера
 
----
+Разовые шаги, руками по SSH. Дальше всё делает пайплайн.
 
-## 1. Разовая настройка на сервере (по SSH под вашим пользователем)
+## 1. Сайт и база в FastPanel
+
+- Создать сайт `formulaedi.ru`, **document root** → `<путь>/apps/web/dist`.
+- Создать базу **MySQL** и пользователя. Записать имя базы / пользователя / пароль.
+- Выпустить SSL Let's Encrypt кнопкой в панели (домен должен указывать на сервер).
+- Добавить проксирование `/api/` → `http://127.0.0.1:4000` — образец в
+  [deploy/nginx-formulaedi.conf](deploy/nginx-formulaedi.conf). Для SPA обязательно
+  `try_files $uri /index.html`, иначе прямые ссылки вида `/menu` будут отдавать 404.
+
+## 2. Инструменты
 
 ```bash
-# 1.1 Инструменты (если ещё не стоят). В FastPanel Node/PG можно поставить через панель.
-node -v   # нужен >= 20;  pm2 -v || npm i -g pm2
+node -v          # нужен >= 20
+npm i -g pm2     # если pm2 ещё нет
+which mysqldump  # нужен для бэкапа перед деплоем
+```
 
-# 1.2 Клонировать репозиторий в каталог сайта (пример пути — поправьте под FastPanel)
-cd /var/www
-git clone https://github.com/n1ghtmare-dev/formulaedi.git formulaedi
-cd formulaedi
+## 3. Первый клон
 
-# 1.3 Продовый .env (НЕ в git). Взять шаблон и заполнить:
+Пайплайн сам не клонирует — только обновляет существующий репозиторий:
+
+```bash
+cd <родительский каталог>
+git clone https://github.com/n1ghtmare-dev/formulaedi.git formulaedi.ru
+cd formulaedi.ru
+git checkout prod
+```
+
+## 4. Продовый `.env`
+
+**Не в git.** Взять шаблон и заполнить:
+
+```bash
 cp .env.production.example .env
-nano .env   # DATABASE_URL из БД FastPanel, JWT-секреты: openssl rand -hex 32
+nano .env
+```
 
-# 1.4 Первая сборка + миграции + запуск API
+Обязательно: `DATABASE_URL` из базы FastPanel и два JWT-секрета
+(`openssl rand -hex 32` для каждого).
+
+## 5. Первый запуск
+
+```bash
 npm ci
 npm run build
 set -a; . ./.env; set +a
-npm run db:deploy -w apps/api      # создаст таблицы
-npm run db:seed  -w apps/api       # 9 категорий + позиции (один раз)
+npm run db:push  -w apps/api    # создаст таблицы
+npm run db:seed  -w apps/api    # категории и позиции меню
 pm2 start deploy/ecosystem.config.cjs
-pm2 save && pm2 startup            # автозапуск после ребута
+pm2 save && pm2 startup         # автозапуск после ребута
 ```
 
-## 2. База данных
-В FastPanel создайте **PostgreSQL** базу и пользователя, впишите их в `DATABASE_URL` в `.env`.
-(152-ФЗ: сервер российский — ок.)
+## 6. Раннер и секреты
 
-## 3. Nginx / сайт в FastPanel
-В панели для сайта `formulaedi.ru`:
-- **Document root** → `/var/www/formulaedi/apps/web/dist`
-- Добавить проксирование: `location /api/` → `http://127.0.0.1:4000` (см. `deploy/nginx-formulaedi.conf` как образец; для SPA — `try_files $uri /index.html`).
-- Выпустить **SSL Let’s Encrypt** кнопкой в FastPanel (домен уже указывает на сервер).
-
-## 4. Автодеплой через GitHub Actions
-Воркфлоу `.github/workflows/deploy.yml` уже в репозитории. Он по пушу в `main` заходит на сервер по SSH и запускает `deploy/deploy.sh` (pull → build → миграции → рестарт API).
-
-**Секреты репозитория** (GitHub → Settings → Secrets and variables → Actions → New secret):
-| Секрет | Значение |
-|---|---|
-| `SSH_HOST` | `95.163.244.138` |
-| `SSH_USER` | ваш пользователь на сервере |
-| `SSH_PORT` | `50222` |
-| `SSH_PASSWORD` | пароль пользователя (НОВЫЙ, после смены старого) |
-| `DEPLOY_PATH` | путь к репозиторию (напр. `/var/www/formulaedi`); если не задать — воркфлоу возьмёт `$HOME/formulaedi` |
-
-После этого каждый `git push` в `main` → автоматический деплой. Можно запустить вручную: вкладка **Actions → Deploy formulaedi.ru → Run workflow**.
+См. [deploy/RUNNER-SETUP.md](deploy/RUNNER-SETUP.md) — установка службы, SSH-ключ,
+четыре секрета репозитория.
 
 ---
 
-## Что нужно от вас, чтобы я довёл настройку
-1. Подтвердить путь установки на сервере (или дать свой) и порт SSH.
-2. Node и PostgreSQL уже установлены в панели? Процесс API ведём через **PM2** (как здесь) или через встроенный Node-менеджер FastPanel?
-3. Доступ к серверу мне отсюда закрыт (порт 22 режется в моём окружении) — разовые шаги 1–3 выполняете вы по инструкции; я помогаю с любым шагом и правлю конфиги.
+# Что нужно знать про базу
+
+Схема накатывается через **`prisma db push`** — Prisma просто приводит базу к виду
+[schema.prisma](apps/api/prisma/schema.prisma), без истории миграций.
+
+Пока проект не в бою — это удобно и быстро. Но у `db push` есть свойство: он не различает
+переименование и «удалили одну колонку, добавили другую». На боевых данных это потеря.
+
+**До первого реального заказа надо перейти на миграции:**
+
+```bash
+npm run db:migrate -w apps/api -- --name init   # создаст prisma/migrations/
+```
+
+и в [remote-deploy.sh](deploy/remote-deploy.sh) заменить `db:push` на `prisma migrate deploy`.
+Пока этого не сделано, единственная страховка — бэкап дампа перед каждым деплоем
+(он уже в пайплайне, лежит в `~/_deploy_backups/formulaedi/`, хранятся последние 10).
+
+## Откат
+
+```bash
+# код
+cd <PROD_DEPLOY_PATH> && git reset --hard <старый-коммит> && npm ci && npm run build && pm2 reload formulaedi-api
+
+# база
+gunzip < ~/_deploy_backups/formulaedi/db-<дата>.sql.gz | mysql -u <user> -p <база>
+```
