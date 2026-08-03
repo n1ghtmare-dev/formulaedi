@@ -93,13 +93,12 @@ jobs:
             "bash -s -- '${{ secrets.PROD_DEPLOY_PATH }}' '$MODE' 'origin/$TARGET_REF'" \
             < deploy/remote-deploy.sh
 
-      # Ходим по публичному IP с заголовком Host: проверяем весь путь целиком
-      # (Nginx -> обратный прокси -> Node) и не зависим от того, переехал ли DNS.
+      # По домену и по HTTPS — ровно так, как сайт видит живой пользователь:
+      # DNS -> Nginx -> TLS -> обратный прокси -> Node.
       - name: Smoke (только apply)
         if: ${{ env.MODE == 'apply' }}
         env:
-          BASE_URL: http://${{ secrets.PROD_SSH_HOST }}
-          HOST_HDR: formulaedi.ru
+          BASE_URL: https://formulaedi.ru
         run: bash tests/smoke.sh
 
       - name: Убрать ключ
