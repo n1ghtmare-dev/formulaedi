@@ -124,7 +124,10 @@ git reset --hard "$REF" || die "git reset не прошёл"
 echo "версия: $(git rev-parse --short HEAD)"
 
 say "ЗАВИСИМОСТИ"
-npm ci 2>&1 | tail -5 || die "npm ci упал"
+# --include=dev обязателен. Выше мы уже загрузили .env, где NODE_ENV=production,
+# а в этом режиме npm пропускает devDependencies — вместе с @nestjs/cli, tsc и vite.
+# Без них сборка падает с «sh: 1: nest: not found».
+npm ci --include=dev 2>&1 | tail -5 || die "npm ci упал"
 
 # ОБЯЗАТЕЛЬНО и ДО сборки. postinstall от @prisma/client в монорепо со
 # workspaces не находит схему в apps/api и оставляет заглушку без типов —
