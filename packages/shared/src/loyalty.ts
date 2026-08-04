@@ -37,3 +37,8 @@ export function formulasToEarn(
 export function nextBurnDate(from: Date = new Date()): Date {
   return new Date(from.getFullYear(), from.getMonth() + 1, 1, 0, 0, 0, 0);
 }
+
+/** Начало следующего дня (00:00) — момент, когда начисленные «завтра» формулы активируются. */
+export function startOfNextDay(from: Date = new Date()): Date {
+  return new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1, 0, 0, 0, 0);
+}
