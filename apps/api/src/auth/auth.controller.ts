@@ -1,6 +1,8 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RequestCodeDto, VerifyCodeDto } from './dto/auth.dto';
+import { JwtGuard, type AuthUser } from './jwt.guard';
+import { CurrentUser } from './current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -16,5 +18,12 @@ export class AuthController {
   @Post('verify')
   verify(@Body() dto: VerifyCodeDto) {
     return this.auth.verifyCode(dto.phone, dto.code, dto.fullName);
+  }
+
+  // GET /api/auth/me — данные текущего пользователя (кабинет)
+  @Get('me')
+  @UseGuards(JwtGuard)
+  me(@CurrentUser() user: AuthUser) {
+    return this.auth.me(user.userId);
   }
 }

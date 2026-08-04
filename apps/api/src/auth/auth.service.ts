@@ -28,6 +28,17 @@ export class AuthService {
     return `+7${ten}`;
   }
 
+  /** Данные текущего пользователя для личного кабинета. */
+  async me(userId: string): Promise<UserDTO> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    return {
+      id: user.id,
+      phone: user.phone,
+      fullName: user.fullName,
+      formulaBalance: user.formulaBalance,
+    };
+  }
+
   private hash(value: string): string {
     return createHash('sha256').update(value).digest('hex');
   }
