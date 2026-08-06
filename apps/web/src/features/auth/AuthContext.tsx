@@ -10,10 +10,11 @@ import {
   clearTokens,
   fetchMe,
   loadTokens,
+  login as loginApi,
   refreshSession,
   saveName,
   saveTokens,
-  verifyCode,
+  sendConfirmation,
   type AuthUser,
 } from './authApi';
 
@@ -22,11 +23,13 @@ type Status = 'loading' | 'anon' | 'authed';
 interface AuthContextValue {
   status: Status;
   user: AuthUser | null;
-  /** Подтвердить код: возвращает isNew (нужен ли ввод ФИО). */
-  verify: (phone: string, code: string) => Promise<{ isNew: boolean }>;
-  /** Сохранить ФИО (после регистрации). */
+  /** Мгновенный вход/регистрация по почте. */
+  login: (email: string, fullName?: string) => Promise<void>;
+  /** Сохранить ФИО. */
   setName: (fullName: string) => Promise<void>;
-  /** Перечитать профиль (напр. после заказа — обновить баланс). */
+  /** Запросить письмо подтверждения почты. */
+  requestConfirmation: () => Promise<{ sent: boolean; devLink?: string }>;
+  /** Перечитать профиль (баланс, статус подтверждения). */
   refreshUser: () => Promise<void>;
   logout: () => void;
 }
@@ -37,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  // Восстановление сессии по refresh-токену при загрузке.
   useEffect(() => {
     const t = loadTokens();
     if (!t) {
@@ -56,12 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const verify = useCallback(async (phone: string, code: string) => {
-    const res = await verifyCode(phone, code);
+  const login = useCallback(async (email: string, fullName?: string) => {
+    const res = await loginApi(email, fullName);
     saveTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
     setUser(res.user);
     setStatus('authed');
-    return { isNew: res.isNew && !res.user.fullName };
   }, []);
 
   const setName = useCallback(async (fullName: string) => {
@@ -71,14 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }, []);
 
+  const requestConfirmation = useCallback(() => sendConfirmation(), []);
+
   const refreshUser = useCallback(async () => {
     const t = loadTokens();
     if (!t) return;
     try {
-      const me = await fetchMe(t.accessToken);
-      setUser(me);
+      setUser(await fetchMe(t.accessToken));
     } catch {
-      /* игнорируем — не критично */
+      /* игнорируем */
     }
   }, []);
 
@@ -89,7 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ status, user, verify, setName, refreshUser, logout }}>
+    <AuthContext.Provider
+      value={{ status, user, login, setName, requestConfirmation, refreshUser, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

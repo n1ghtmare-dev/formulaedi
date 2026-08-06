@@ -2,129 +2,121 @@ import {
   BadRequestException,
   Inject,
   Injectable,
-  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomInt, randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import type { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthTokens, UserDTO } from '@formulaedi/shared';
-import { SMS_SENDER, type SmsSender } from './sms';
+import { MAILER, type Mailer } from './mailer';
 
-const CODE_TTL_MS = 5 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
+const CONFIRM_TTL_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger('Auth');
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-    @Inject(SMS_SENDER) private readonly sms: SmsSender,
+    @Inject(MAILER) private readonly mailer: Mailer,
   ) {}
 
-  /** Приводит телефон к формату +7XXXXXXXXXX. */
-  private normalizePhone(raw: string): string {
-    const digits = raw.replace(/\D/g, '');
-    const ten = digits.slice(-10);
-    return `+7${ten}`;
-  }
-
-  /** Данные текущего пользователя для личного кабинета. */
-  async me(userId: string): Promise<UserDTO> {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    return {
-      id: user.id,
-      phone: user.phone,
-      fullName: user.fullName,
-      formulaBalance: user.formulaBalance,
-    };
+  private normalizeEmail(raw: string): string {
+    return raw.trim().toLowerCase();
   }
 
   private hash(value: string): string {
     return createHash('sha256').update(value).digest('hex');
   }
 
-  /** Шаг 1: сгенерировать и «отправить» код. */
-  async requestCode(rawPhone: string): Promise<{ sent: true; devCode?: string }> {
-    const phone = this.normalizePhone(rawPhone);
-    const code = String(randomInt(1000, 9999));
-    const expiresAt = new Date(Date.now() + CODE_TTL_MS);
-
-    await this.prisma.verificationCode.create({
-      data: { phone, codeHash: this.hash(code), expiresAt },
-    });
-
-    await this.sms.send(phone, `Ваш код для входа в «Формула Еды»: ${code}`);
-
-    // В dev-режиме возвращаем код, чтобы показать его в интерфейсе.
-    const isDev = (process.env.SMS_PROVIDER ?? 'dev') !== 'smsru';
-    return { sent: true, ...(isDev ? { devCode: code } : {}) };
-  }
-
-  /** Шаг 2: проверить код, создать/найти пользователя, выдать токены. */
-  async verifyCode(
-    rawPhone: string,
-    code: string,
-    fullName?: string,
-  ): Promise<AuthTokens & { user: UserDTO; isNew: boolean }> {
-    const phone = this.normalizePhone(rawPhone);
-    const record = await this.prisma.verificationCode.findFirst({
-      where: { phone, consumedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!record) throw new BadRequestException('Код не запрашивался');
-    if (record.expiresAt < new Date()) throw new BadRequestException('Код истёк');
-    if (record.attempts >= MAX_ATTEMPTS)
-      throw new BadRequestException('Превышено число попыток');
-
-    if (record.codeHash !== this.hash(code)) {
-      await this.prisma.verificationCode.update({
-        where: { id: record.id },
-        data: { attempts: { increment: 1 } },
-      });
-      throw new UnauthorizedException('Неверный код');
-    }
-
-    await this.prisma.verificationCode.update({
-      where: { id: record.id },
-      data: { consumedAt: new Date() },
-    });
-
-    const existing = await this.prisma.user.findUnique({ where: { phone } });
-    const isNew = !existing;
-    const user = existing
-      ? existing
-      : await this.prisma.user.create({ data: { phone, fullName: fullName ?? null } });
-
-    const tokens = await this.issueTokens(user.id, user.phone, user.role);
-
+  private toDto(user: User): UserDTO {
     return {
-      ...tokens,
-      isNew,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        fullName: user.fullName,
-        formulaBalance: user.formulaBalance,
-      },
+      id: user.id,
+      email: user.email,
+      emailConfirmed: user.emailConfirmed,
+      phone: user.phone,
+      fullName: user.fullName,
+      formulaBalance: user.formulaBalance,
     };
   }
 
-  /** Обновить ФИО пользователя (ввод при регистрации). */
+  /** Мгновенный вход по почте: находим или создаём пользователя и сразу выдаём токены. */
+  async login(
+    rawEmail: string,
+    fullName?: string,
+  ): Promise<AuthTokens & { user: UserDTO; isNew: boolean }> {
+    const email = this.normalizeEmail(rawEmail);
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    const isNew = !existing;
+    const user =
+      existing ??
+      (await this.prisma.user.create({
+        data: { email, fullName: fullName?.trim() || null },
+      }));
+
+    const tokens = await this.issueTokens(user.id, email, user.role);
+    return { ...tokens, isNew, user: this.toDto(user) };
+  }
+
+  /** Данные текущего пользователя для личного кабинета. */
+  async me(userId: string): Promise<UserDTO> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    return this.toDto(user);
+  }
+
+  /** Обновить ФИО. */
   async updateProfile(userId: string, fullName: string): Promise<UserDTO> {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { fullName: fullName.trim() },
     });
-    return {
-      id: user.id,
-      phone: user.phone,
-      fullName: user.fullName,
-      formulaBalance: user.formulaBalance,
-    };
+    return this.toDto(user);
+  }
+
+  /**
+   * Отправить письмо со ссылкой подтверждения почты (через PHP-mailer).
+   * В dev возвращает ссылку, чтобы можно было подтвердить без реальной почты.
+   */
+  async sendConfirmation(userId: string): Promise<{ sent: boolean; devLink?: string }> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!user.email) throw new BadRequestException('У аккаунта нет почты');
+    if (user.emailConfirmed) return { sent: true };
+
+    const token = randomBytes(32).toString('hex');
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailTokenHash: this.hash(token),
+        emailTokenExp: new Date(Date.now() + CONFIRM_TTL_MS),
+      },
+    });
+
+    const base = process.env.PUBLIC_URL ?? process.env.WEB_ORIGIN ?? 'https://formulaedi.ru';
+    const link = `${base}/api/auth/confirm-email?token=${token}`;
+    await this.mailer.send(
+      user.email,
+      'Подтверждение почты — Формула Еды',
+      link,
+    );
+
+    const isDev = !process.env.MAILER_URL;
+    return { sent: true, ...(isDev ? { devLink: link } : {}) };
+  }
+
+  /** Подтвердить почту по токену из письма. */
+  async confirmEmail(token: string): Promise<{ ok: boolean }> {
+    if (!token) throw new BadRequestException('Нет токена');
+    const user = await this.prisma.user.findFirst({
+      where: { emailTokenHash: this.hash(token) },
+    });
+    if (!user || !user.emailTokenExp || user.emailTokenExp < new Date()) {
+      throw new BadRequestException('Ссылка недействительна или истекла');
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { emailConfirmed: true, emailTokenHash: null, emailTokenExp: null },
+    });
+    return { ok: true };
   }
 
   /** Обновление сессии по refresh-токену (с ротацией). */
@@ -140,24 +132,16 @@ export class AuthService {
       where: { id: record.id },
       data: { revokedAt: new Date() },
     });
-    const tokens = await this.issueTokens(user.id, user.phone, user.role);
-    return {
-      ...tokens,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        fullName: user.fullName,
-        formulaBalance: user.formulaBalance,
-      },
-    };
+    const tokens = await this.issueTokens(user.id, user.email ?? '', user.role);
+    return { ...tokens, user: this.toDto(user) };
   }
 
   private async issueTokens(
     userId: string,
-    phone: string,
+    email: string,
     role: string,
   ): Promise<AuthTokens> {
-    const payload = { sub: userId, phone, role };
+    const payload = { sub: userId, email, role };
     const accessToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_ACCESS_SECRET ?? 'dev-access',
       expiresIn: (process.env.JWT_ACCESS_TTL ?? '15m') as unknown as number,

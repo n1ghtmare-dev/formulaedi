@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import { User, Sparkles, LogOut, ArrowLeft } from 'lucide-react';
+import { User, Sparkles, LogOut, Mail, CheckCircle2 } from 'lucide-react';
 import { useAuth } from './AuthContext';
-import { requestCode } from './authApi';
-
-type Step = 'phone' | 'code' | 'name';
 
 export function AccountButton() {
-  const { status, user, verify, setName, logout } = useAuth();
+  const { status, user, login, requestConfirmation, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [name, setNameInput] = useState('');
-  const [devCode, setDevCode] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
+  const [devLink, setDevLink] = useState<string | null>(null);
 
   // Баннер сгорания: с 27-го числа до конца месяца.
   const burnWarning = (() => {
@@ -25,55 +21,35 @@ export function AccountButton() {
     return `01.${String(first.getMonth() + 1).padStart(2, '0')}`;
   })();
 
-  const reset = () => {
-    setStep('phone');
-    setPhone('');
-    setCode('');
-    setNameInput('');
-    setDevCode(null);
-    setError(null);
-    setBusy(false);
-  };
-
   const close = () => {
     setOpen(false);
-    if (status !== 'authed') reset();
-  };
-
-  const onSendCode = async () => {
-    setBusy(true);
     setError(null);
-    try {
-      const res = await requestCode(phone);
-      setDevCode(res.devCode ?? null);
-      setStep('code');
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
+    if (status !== 'authed') {
+      setEmail('');
+      setName('');
     }
   };
 
-  const onVerify = async () => {
+  const onLogin = async () => {
     setBusy(true);
     setError(null);
     try {
-      const { isNew } = await verify(phone, code);
-      if (isNew) setStep('name');
-      else close();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const onSaveName = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      await setName(name);
+      await login(email, name.trim() || undefined);
       close();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onConfirm = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await requestConfirmation();
+      setConfirmMsg('Письмо со ссылкой отправлено на почту');
+      setDevLink(res.devLink ?? null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -108,10 +84,40 @@ export function AccountButton() {
               <div className="space-y-3">
                 <div>
                   <div className="font-serif text-lg text-olive-800">
-                    {user!.fullName ? `Добро пожаловать, ${user!.fullName}` : 'Личный кабинет'}
+                    {user!.fullName ? `Здравствуйте, ${user!.fullName}` : 'Личный кабинет'}
                   </div>
-                  <div className="mt-0.5 text-sm text-ink-soft">{user!.phone}</div>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-soft">
+                    <Mail size={14} /> {user!.email}
+                  </div>
                 </div>
+
+                {/* Подтверждение почты */}
+                {user!.emailConfirmed ? (
+                  <div className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-olive-700">
+                    <CheckCircle2 size={14} className="text-brand-500" /> Почта подтверждена
+                  </div>
+                ) : confirmMsg ? (
+                  <div className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-olive-700">
+                    {confirmMsg}
+                    {devLink && (
+                      <a
+                        href={devLink}
+                        className="mt-1 block truncate font-semibold text-brand-500 underline"
+                      >
+                        dev: открыть ссылку
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={onConfirm}
+                    disabled={busy}
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-wood-100 py-2 text-sm font-semibold text-[#7a5730] transition hover:bg-wood-500/30 disabled:opacity-60"
+                  >
+                    <Mail size={15} /> {busy ? 'Отправляем…' : 'Подтвердить почту'}
+                  </button>
+                )}
+
                 <div className="rounded-xl bg-brand-50 px-4 py-3">
                   <div className="text-xs text-ink-soft">баланс</div>
                   <div className="font-serif text-2xl text-brand-500">
@@ -123,6 +129,7 @@ export function AccountButton() {
                     {user!.formulaBalance} формул сгорят {burnWarning}
                   </div>
                 )}
+
                 <button
                   onClick={() => {
                     logout();
@@ -132,90 +139,34 @@ export function AccountButton() {
                 >
                   <LogOut size={15} /> Выйти
                 </button>
+                {error && <div className="text-xs font-semibold text-danger">{error}</div>}
               </div>
             ) : (
               <div className="space-y-3">
-                {step !== 'phone' && (
-                  <button
-                    onClick={() => {
-                      setError(null);
-                      setStep(step === 'name' ? 'code' : 'phone');
-                    }}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-ink-soft hover:text-olive-700"
-                  >
-                    <ArrowLeft size={13} /> назад
-                  </button>
-                )}
-
-                {step === 'phone' && (
-                  <>
-                    <div className="font-serif text-lg text-olive-800">Вход по телефону</div>
-                    <input
-                      autoFocus
-                      inputMode="tel"
-                      placeholder="+7 900 000-00-00"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full rounded-xl border border-line bg-cream px-3.5 py-2.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-                    />
-                    <button
-                      onClick={onSendCode}
-                      disabled={busy || phone.replace(/\D/g, '').length < 10}
-                      className="w-full rounded-full bg-brand-500 py-2.5 text-sm font-bold text-white transition hover:bg-olive-600 disabled:opacity-50"
-                    >
-                      {busy ? 'Отправляем…' : 'Отправить код'}
-                    </button>
-                  </>
-                )}
-
-                {step === 'code' && (
-                  <>
-                    <div className="font-serif text-lg text-olive-800">Введите код</div>
-                    <div className="text-xs text-ink-soft">Код отправлен на {phone}</div>
-                    <input
-                      autoFocus
-                      inputMode="numeric"
-                      placeholder="0000"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                      className="w-full rounded-xl border border-line bg-cream px-3.5 py-2.5 text-center text-lg tracking-[0.3em] outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-                    />
-                    {devCode && (
-                      <div className="rounded-lg bg-wood-100 px-3 py-1.5 text-center text-xs text-[#7a5730]">
-                        dev-код: <b>{devCode}</b>
-                      </div>
-                    )}
-                    <button
-                      onClick={onVerify}
-                      disabled={busy || code.length < 4}
-                      className="w-full rounded-full bg-brand-500 py-2.5 text-sm font-bold text-white transition hover:bg-olive-600 disabled:opacity-50"
-                    >
-                      {busy ? 'Проверяем…' : 'Войти'}
-                    </button>
-                  </>
-                )}
-
-                {step === 'name' && (
-                  <>
-                    <div className="font-serif text-lg text-olive-800">Как вас зовут?</div>
-                    <div className="text-xs text-ink-soft">Введите ФИО для заказов</div>
-                    <input
-                      autoFocus
-                      placeholder="Иван Иванов"
-                      value={name}
-                      onChange={(e) => setNameInput(e.target.value)}
-                      className="w-full rounded-xl border border-line bg-cream px-3.5 py-2.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-                    />
-                    <button
-                      onClick={onSaveName}
-                      disabled={busy || name.trim().length < 2}
-                      className="w-full rounded-full bg-brand-500 py-2.5 text-sm font-bold text-white transition hover:bg-olive-600 disabled:opacity-50"
-                    >
-                      {busy ? 'Сохраняем…' : 'Готово'}
-                    </button>
-                  </>
-                )}
-
+                <div className="font-serif text-lg text-olive-800">Вход по почте</div>
+                <div className="text-xs text-ink-soft">Введите почту — сразу войдёте в кабинет</div>
+                <input
+                  autoFocus
+                  type="email"
+                  inputMode="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-line bg-cream px-3.5 py-2.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                />
+                <input
+                  placeholder="Имя (необязательно)"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-xl border border-line bg-cream px-3.5 py-2.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                />
+                <button
+                  onClick={onLogin}
+                  disabled={busy || !/^\S+@\S+\.\S+$/.test(email)}
+                  className="w-full rounded-full bg-brand-500 py-2.5 text-sm font-bold text-white transition hover:bg-olive-600 disabled:opacity-50"
+                >
+                  {busy ? 'Входим…' : 'Войти'}
+                </button>
                 {error && <div className="text-xs font-semibold text-danger">{error}</div>}
               </div>
             )}

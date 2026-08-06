@@ -145,11 +145,11 @@ async function main() {
     }
   }
 
-  // Демо-админ (вход по телефону, роль ADMIN)
+  // Демо-админ (вход по почте, роль ADMIN)
   await prisma.user.upsert({
-    where: { phone: '+79000000000' },
+    where: { email: 'admin@formulaedi.ru' },
     update: { role: 'ADMIN' },
-    create: { phone: '+79000000000', fullName: 'Администратор', role: 'ADMIN' },
+    create: { email: 'admin@formulaedi.ru', fullName: 'Администратор', role: 'ADMIN', emailConfirmed: true },
   });
 
   const cats = await prisma.menuCategory.count();

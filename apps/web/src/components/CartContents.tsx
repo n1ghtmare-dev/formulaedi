@@ -12,6 +12,7 @@ export type Delivery = {
   building: 'BUILDING_1' | 'BUILDING_2';
   floor: string;
   room: string;
+  phone: string;
 };
 
 type Cart = ReturnType<typeof useCart>;
@@ -27,7 +28,7 @@ export function CartContents({
   setDelivery: (d: Delivery) => void;
   onOrderAccepted: (order: OrderAccepted) => void;
 }) {
-  const { status, user, refreshUser } = useAuth();
+  const { status, refreshUser } = useAuth();
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
@@ -46,17 +47,22 @@ export function CartContents({
   const notLoggedIn = status !== 'authed';
   const floorMissing = need && !delivery.floor.trim();
   const roomMissing = need && !delivery.room.trim();
-  const addrMissing = floorMissing || roomMissing;
+  const phoneDigits = delivery.phone.replace(/\D/g, '').slice(-10);
+  const phoneMissing = phoneDigits.length !== 10;
+  const contactPhone = `+7${phoneDigits}`;
+  const invalid = floorMissing || roomMissing || phoneMissing;
 
   const onPay = async () => {
     setPayError(null);
-    // Гейтинг по ТЗ: без входа и без адреса оформить нельзя
-    if (notLoggedIn || addrMissing) {
+    // Гейтинг по ТЗ: без входа, телефона и адреса оформить нельзя
+    if (notLoggedIn || invalid) {
       setShowErrors(true);
       setPayError(
         notLoggedIn
           ? 'Войдите в кабинет, чтобы оформить заказ'
-          : 'Укажите этаж и комнату для доставки',
+          : phoneMissing
+            ? 'Укажите телефон для связи'
+            : 'Укажите этаж и комнату для доставки',
       );
       return;
     }
@@ -70,7 +76,7 @@ export function CartContents({
         building: need ? delivery.building : undefined,
         floor: need ? delivery.floor : undefined,
         room: need ? delivery.room : undefined,
-        contactPhone: user!.phone,
+        contactPhone,
       });
       const accepted = await confirmOrder(order.id);
       await refreshUser();
@@ -134,6 +140,12 @@ export function CartContents({
 
       {/* Доставка */}
       <div className="space-y-3 border-t border-line pt-4">
+        <Field
+          placeholder="Телефон для связи"
+          value={delivery.phone}
+          onChange={(v) => setDelivery({ ...delivery, phone: v })}
+          invalid={showErrors && phoneMissing}
+        />
         <div className="grid grid-cols-2 gap-2">
           <Toggle active={need} onClick={() => setDelivery({ ...delivery, type: 'DELIVERY' })}>
             <Bike size={16} strokeWidth={1.75} /> Доставка

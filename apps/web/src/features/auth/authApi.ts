@@ -1,10 +1,12 @@
-// API и хранилище токенов для личного кабинета.
+// API и хранилище токенов для личного кабинета (вход по почте).
 const BASE = '/api';
 const KEY = 'fe_auth';
 
 export interface AuthUser {
   id: string;
-  phone: string;
+  email: string | null;
+  emailConfirmed: boolean;
+  phone: string | null;
   fullName: string | null;
   formulaBalance: number;
 }
@@ -37,25 +39,19 @@ async function readError(r: Response): Promise<string> {
     return 'Ошибка сети';
   }
 }
-
-export async function requestCode(phone: string): Promise<{ sent: boolean; devCode?: string }> {
-  const r = await fetch(`${BASE}/auth/request-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone }),
-  });
-  if (!r.ok) throw new Error(await readError(r));
-  return r.json();
+export async function readErr(r: Response): Promise<string> {
+  return readError(r);
 }
 
-export async function verifyCode(
-  phone: string,
-  code: string,
+/** Мгновенный вход/регистрация по почте. */
+export async function login(
+  email: string,
+  fullName?: string,
 ): Promise<Tokens & { isNew: boolean; user: AuthUser }> {
-  const r = await fetch(`${BASE}/auth/verify`, {
+  const r = await fetch(`${BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, code }),
+    body: JSON.stringify({ email, fullName }),
   });
   if (!r.ok) throw new Error(await readError(r));
   return r.json();
@@ -79,10 +75,7 @@ export async function fetchMe(accessToken: string): Promise<AuthUser> {
   return r.json();
 }
 
-/**
- * fetch с Bearer-токеном и авто-обновлением при 401 (одна попытка refresh).
- * path — путь под /api, напр. '/orders'.
- */
+/** fetch с Bearer и авто-refresh при 401. path — под /api. */
 export async function authFetch(path: string, init?: RequestInit): Promise<Response> {
   const t = loadTokens();
   if (!t) throw new Error('Требуется вход');
@@ -105,10 +98,6 @@ export async function authFetch(path: string, init?: RequestInit): Promise<Respo
   return res;
 }
 
-export async function readErr(r: Response): Promise<string> {
-  return readError(r);
-}
-
 export async function saveName(accessToken: string, fullName: string): Promise<AuthUser> {
   const r = await fetch(`${BASE}/auth/me`, {
     method: 'PATCH',
@@ -117,4 +106,11 @@ export async function saveName(accessToken: string, fullName: string): Promise<A
   });
   if (!r.ok) throw new Error(await readError(r));
   return r.json();
+}
+
+/** Запросить письмо со ссылкой подтверждения почты. */
+export async function sendConfirmation(): Promise<{ sent: boolean; devLink?: string }> {
+  const res = await authFetch('/auth/send-confirmation', { method: 'POST' });
+  if (!res.ok) throw new Error(await readErr(res));
+  return res.json();
 }

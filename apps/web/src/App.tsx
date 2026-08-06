@@ -14,9 +14,20 @@ import { OrderAcceptedModal } from './features/orders/OrderAcceptedModal';
 import type { OrderAccepted } from './features/orders/orderApi';
 
 export function App() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const balance = user?.formulaBalance ?? 0; // реальный баланс формул при входе
   const [accepted, setAccepted] = useState<OrderAccepted | null>(null);
+
+  // Возврат по ссылке подтверждения почты (?email=confirmed) — обновляем профиль.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('email') === 'confirmed') {
+      refreshUser();
+      params.delete('email');
+      const qs = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    }
+  }, [refreshUser]);
   const [menu, setMenu] = useState<MenuCategoryDTO[]>([]);
   const [live, setLive] = useState(true);
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -26,6 +37,7 @@ export function App() {
     building: 'BUILDING_1',
     floor: '',
     room: '',
+    phone: '',
   });
 
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());

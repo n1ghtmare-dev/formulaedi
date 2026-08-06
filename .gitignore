@@ -14,8 +14,9 @@ apps/api/src/generated/
 # рабочие артефакты агентов/скиллов
 .playwright-mcp/
 
-# локальный портативный PostgreSQL
+# локальный портативный PostgreSQL / MariaDB
 .localpg/
+.localdb/
 
 # локальные скиллы/тулинг (не код проекта)
 .claude/

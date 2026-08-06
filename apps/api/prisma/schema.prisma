@@ -22,8 +22,12 @@ enum UserRole {
 
 model User {
   id             String   @id @default(cuid())
-  phone          String   @unique // формат +7XXXXXXXXXX
-  fullName       String? // ФИО, заполняется при регистрации
+  email          String?  @unique // логин по почте
+  emailConfirmed Boolean  @default(false)
+  emailTokenHash String? // хэш токена подтверждения почты
+  emailTokenExp  DateTime? // срок действия токена
+  phone          String? // телефон для курьера (вводится при оформлении)
+  fullName       String? // ФИО
   role           UserRole @default(CUSTOMER)
   formulaBalance Int      @default(0) // денормализованный баланс формул (источник правды — ledger)
   isBlocked      Boolean  @default(false)

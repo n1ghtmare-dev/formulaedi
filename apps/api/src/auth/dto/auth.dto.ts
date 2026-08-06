@@ -1,10 +1,13 @@
-import { IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Length } from 'class-validator';
 
-export class RequestCodeDto {
-  // +7XXXXXXXXXX или 8XXXXXXXXXX — нормализуем в сервисе
+export class LoginDto {
+  @IsEmail({}, { message: 'Некорректная почта' })
+  email!: string;
+
+  @IsOptional()
   @IsString()
-  @Matches(/^(\+7|8|7)\d{10}$/, { message: 'Некорректный номер телефона' })
-  phone!: string;
+  @Length(2, 120)
+  fullName?: string;
 }
 
 export class RefreshDto {
@@ -16,19 +19,4 @@ export class UpdateProfileDto {
   @IsString()
   @Length(2, 120)
   fullName!: string;
-}
-
-export class VerifyCodeDto {
-  @IsString()
-  @Matches(/^(\+7|8|7)\d{10}$/, { message: 'Некорректный номер телефона' })
-  phone!: string;
-
-  @IsString()
-  @Length(4, 6)
-  code!: string;
-
-  @IsOptional()
-  @IsString()
-  @Length(2, 120)
-  fullName?: string;
 }

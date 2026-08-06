@@ -22,7 +22,9 @@ export interface MenuCategoryDTO {
 // ——— Пользователь ———
 export interface UserDTO {
   id: string;
-  phone: string;
+  email: string | null;
+  emailConfirmed: boolean;
+  phone: string | null;
   fullName: string | null;
   formulaBalance: number;
 }

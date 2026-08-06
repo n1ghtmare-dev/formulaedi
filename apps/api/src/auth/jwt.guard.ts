@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 
 export interface AuthUser {
   userId: string;
-  phone: string;
+  email: string;
   role: string;
 }
 
@@ -26,7 +26,7 @@ export class JwtGuard implements CanActivate {
       const payload = await this.jwt.verifyAsync(token, {
         secret: process.env.JWT_ACCESS_SECRET ?? 'dev-access',
       });
-      req.user = { userId: payload.sub, phone: payload.phone, role: payload.role } as AuthUser;
+      req.user = { userId: payload.sub, email: payload.email, role: payload.role } as AuthUser;
       return true;
     } catch {
       throw new UnauthorizedException('Недействительный или истёкший токен');
