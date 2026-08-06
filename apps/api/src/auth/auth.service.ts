@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -8,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomInt, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthTokens, UserDTO } from '@formulaedi/shared';
+import { SMS_SENDER, type SmsSender } from './sms';
 
 const CODE_TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -19,6 +21,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    @Inject(SMS_SENDER) private readonly sms: SmsSender,
   ) {}
 
   /** Приводит телефон к формату +7XXXXXXXXXX. */
@@ -53,13 +56,11 @@ export class AuthService {
       data: { phone, codeHash: this.hash(code), expiresAt },
     });
 
-    // TODO: интеграция SMS.ru / SMSC. Пока dev-режим — код в лог.
-    const provider = process.env.SMS_PROVIDER ?? 'dev';
-    if (provider === 'dev') {
-      this.logger.warn(`SMS-код для ${phone}: ${code}`);
-      return { sent: true, devCode: code };
-    }
-    return { sent: true };
+    await this.sms.send(phone, `Ваш код для входа в «Формула Еды»: ${code}`);
+
+    // В dev-режиме возвращаем код, чтобы показать его в интерфейсе.
+    const isDev = (process.env.SMS_PROVIDER ?? 'dev') !== 'smsru';
+    return { sent: true, ...(isDev ? { devCode: code } : {}) };
   }
 
   /** Шаг 2: проверить код, создать/найти пользователя, выдать токены. */
