@@ -77,7 +77,10 @@ export class AuthService {
    * Отправить письмо со ссылкой подтверждения почты (через PHP-mailer).
    * В dev возвращает ссылку, чтобы можно было подтвердить без реальной почты.
    */
-  async sendConfirmation(userId: string): Promise<{ sent: boolean; devLink?: string }> {
+  async sendConfirmation(
+    userId: string,
+    baseUrl: string,
+  ): Promise<{ sent: boolean; devLink?: string }> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (!user.email) throw new BadRequestException('У аккаунта нет почты');
     if (user.emailConfirmed) return { sent: true };
@@ -91,15 +94,10 @@ export class AuthService {
       },
     });
 
-    const base = process.env.PUBLIC_URL ?? process.env.WEB_ORIGIN ?? 'https://formulaedi.ru';
-    const link = `${base}/api/auth/confirm-email?token=${token}`;
-    await this.mailer.send(
-      user.email,
-      'Подтверждение почты — Формула Еды',
-      link,
-    );
+    const link = `${baseUrl}/api/auth/confirm-email?token=${token}`;
+    await this.mailer.send(user.email, 'Подтверждение почты — Формула Еды', link);
 
-    const isDev = !process.env.MAILER_URL;
+    const isDev = process.env.NODE_ENV !== 'production';
     return { sent: true, ...(isDev ? { devLink: link } : {}) };
   }
 

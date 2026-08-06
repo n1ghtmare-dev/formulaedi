@@ -5,10 +5,11 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshDto, UpdateProfileDto } from './dto/auth.dto';
 import { JwtGuard, type AuthUser } from './jwt.guard';
@@ -47,14 +48,18 @@ export class AuthController {
   // POST /api/auth/send-confirmation — отправить письмо со ссылкой подтверждения
   @Post('send-confirmation')
   @UseGuards(JwtGuard)
-  sendConfirmation(@CurrentUser() user: AuthUser) {
-    return this.auth.sendConfirmation(user.userId);
+  sendConfirmation(@CurrentUser() user: AuthUser, @Req() req: Request) {
+    return this.auth.sendConfirmation(user.userId, baseUrl(req));
   }
 
   // GET /api/auth/confirm-email?token= — подтвердить почту по ссылке из письма
   @Get('confirm-email')
-  async confirmEmail(@Query('token') token: string, @Res() res: Response) {
-    const base = process.env.PUBLIC_URL ?? process.env.WEB_ORIGIN ?? '/';
+  async confirmEmail(
+    @Query('token') token: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const base = baseUrl(req);
     try {
       await this.auth.confirmEmail(token);
       res.redirect(302, `${base}/?email=confirmed`);
@@ -62,4 +67,10 @@ export class AuthController {
       res.redirect(302, `${base}/?email=error`);
     }
   }
+}
+
+/** Базовый URL из запроса (учитывает Nginx X-Forwarded-Proto). */
+function baseUrl(req: Request): string {
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+  return `${proto}://${req.get('host')}`;
 }
