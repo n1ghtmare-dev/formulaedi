@@ -9,10 +9,11 @@ import { MenuSection } from './components/MenuSection';
 import { DesktopCart, MobileCart } from './components/Cart';
 import type { Delivery } from './components/CartContents';
 import { Footer } from './components/Footer';
-
-const DEMO_BALANCE = 777; // как в ТЗ: «у вас 777 формул»
+import { useAuth } from './features/auth/AuthContext';
 
 export function App() {
+  const { user } = useAuth();
+  const balance = user?.formulaBalance ?? 0; // реальный баланс формул при входе
   const [menu, setMenu] = useState<MenuCategoryDTO[]>([]);
   const [live, setLive] = useState(true);
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -44,7 +45,7 @@ export function App() {
     return { itemsById: byId, slugByItem: slugById };
   }, [menu]);
 
-  const cart = useCart(itemsById, slugByItem, DEMO_BALANCE);
+  const cart = useCart(itemsById, slugByItem, balance);
 
   // Скроллспай: активная категория по положению секций
   useEffect(() => {
@@ -80,7 +81,7 @@ export function App() {
 
   return (
     <div className="min-h-[100dvh] pb-24 lg:pb-0">
-      <TopBar balance={DEMO_BALANCE} workHours={workHours} />
+      <TopBar workHours={workHours} />
       <Hero onBrowse={() => scrollTo(menu[0]?.slug ?? '')} />
       <CategoryNav categories={menu} active={active} onPick={scrollTo} />
 

@@ -1,12 +1,6 @@
-import { Sparkles } from '../lib/icons';
+import { AccountButton } from '../features/auth/AccountButton';
 
-export function TopBar({
-  balance,
-  workHours,
-}: {
-  balance: number;
-  workHours: string;
-}) {
+export function TopBar({ workHours }: { workHours: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-cream/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-4 py-2.5 sm:px-6">
@@ -23,12 +17,7 @@ export function TopBar({
           {workHours}
         </span>
 
-        <button className="inline-flex items-center gap-2 rounded-full border border-brand-300 bg-paper px-3.5 py-2 text-sm font-bold text-olive-700 transition hover:border-brand-500 hover:bg-brand-50">
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-brand-500 text-white">
-            <Sparkles size={12} strokeWidth={2} />
-          </span>
-          <span className="hidden sm:inline">Кабинет ·</span> {balance}
-        </button>
+        <AccountButton />
       </div>
     </header>
   );

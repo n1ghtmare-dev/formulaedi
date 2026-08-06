@@ -7,6 +7,17 @@ export class RequestCodeDto {
   phone!: string;
 }
 
+export class RefreshDto {
+  @IsString()
+  refreshToken!: string;
+}
+
+export class UpdateProfileDto {
+  @IsString()
+  @Length(2, 120)
+  fullName!: string;
+}
+
 export class VerifyCodeDto {
   @IsString()
   @Matches(/^(\+7|8|7)\d{10}$/, { message: 'Некорректный номер телефона' })

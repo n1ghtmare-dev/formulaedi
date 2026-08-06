@@ -112,6 +112,45 @@ export class AuthService {
     };
   }
 
+  /** Обновить ФИО пользователя (ввод при регистрации). */
+  async updateProfile(userId: string, fullName: string): Promise<UserDTO> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { fullName: fullName.trim() },
+    });
+    return {
+      id: user.id,
+      phone: user.phone,
+      fullName: user.fullName,
+      formulaBalance: user.formulaBalance,
+    };
+  }
+
+  /** Обновление сессии по refresh-токену (с ротацией). */
+  async refresh(rawRefresh: string): Promise<AuthTokens & { user: UserDTO }> {
+    const record = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: this.hash(rawRefresh) },
+    });
+    if (!record || record.revokedAt || record.expiresAt < new Date()) {
+      throw new UnauthorizedException('Сессия истекла, войдите заново');
+    }
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: record.userId } });
+    await this.prisma.refreshToken.update({
+      where: { id: record.id },
+      data: { revokedAt: new Date() },
+    });
+    const tokens = await this.issueTokens(user.id, user.phone, user.role);
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        phone: user.phone,
+        fullName: user.fullName,
+        formulaBalance: user.formulaBalance,
+      },
+    };
+  }
+
   private async issueTokens(
     userId: string,
     phone: string,
