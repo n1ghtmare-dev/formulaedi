@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { formatKopecks } from '@formulaedi/shared';
 import { BUILDING_LABELS } from '@formulaedi/shared';
 import type { useCart } from '../hooks/useCart';
 import { FoodImage } from './FoodImage';
 import { ShoppingBag, Bike, Store } from '../lib/icons';
+import { useAuth } from '../features/auth/AuthContext';
+import { createOrder, confirmOrder, type OrderAccepted } from '../features/orders/orderApi';
 
 export type Delivery = {
   type: 'DELIVERY' | 'PICKUP';
@@ -17,11 +20,18 @@ export function CartContents({
   cart,
   delivery,
   setDelivery,
+  onOrderAccepted,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
+  onOrderAccepted: (order: OrderAccepted) => void;
 }) {
+  const { status, user, refreshUser } = useAuth();
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
   if (cart.count === 0) {
     return (
       <div className="rounded-2xl bg-brand-50 px-5 py-10 text-center">
@@ -33,6 +43,44 @@ export function CartContents({
   }
 
   const need = delivery.type === 'DELIVERY';
+  const notLoggedIn = status !== 'authed';
+  const floorMissing = need && !delivery.floor.trim();
+  const roomMissing = need && !delivery.room.trim();
+  const addrMissing = floorMissing || roomMissing;
+
+  const onPay = async () => {
+    setPayError(null);
+    // Гейтинг по ТЗ: без входа и без адреса оформить нельзя
+    if (notLoggedIn || addrMissing) {
+      setShowErrors(true);
+      setPayError(
+        notLoggedIn
+          ? 'Войдите в кабинет, чтобы оформить заказ'
+          : 'Укажите этаж и комнату для доставки',
+      );
+      return;
+    }
+    setPaying(true);
+    try {
+      const order = await createOrder({
+        items: cart.lines.map((l) => ({ menuItemId: l.item.id, quantity: l.qty })),
+        cutleryCount: cart.cutlery,
+        spendFormulas: cart.spend,
+        deliveryType: delivery.type,
+        building: need ? delivery.building : undefined,
+        floor: need ? delivery.floor : undefined,
+        room: need ? delivery.room : undefined,
+        contactPhone: user!.phone,
+      });
+      const accepted = await confirmOrder(order.id);
+      await refreshUser();
+      onOrderAccepted(accepted);
+    } catch (e) {
+      setPayError((e as Error).message);
+    } finally {
+      setPaying(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -112,11 +160,13 @@ export function CartContents({
                 placeholder="Этаж"
                 value={delivery.floor}
                 onChange={(v) => setDelivery({ ...delivery, floor: v })}
+                invalid={showErrors && floorMissing}
               />
               <Field
                 placeholder="Комната"
                 value={delivery.room}
                 onChange={(v) => setDelivery({ ...delivery, room: v })}
+                invalid={showErrors && roomMissing}
               />
             </div>
           </div>
@@ -141,11 +191,28 @@ export function CartContents({
         </div>
       </div>
 
-      <button className="w-full rounded-full bg-brand-500 py-3.5 font-bold text-white shadow-[var(--shadow-soft)] transition hover:bg-olive-600 active:translate-y-px">
-        Оплатить {formatKopecks(cart.total)}
+      <button
+        onClick={onPay}
+        disabled={paying}
+        className="w-full rounded-full bg-brand-500 py-3.5 font-bold text-white shadow-[var(--shadow-soft)] transition hover:bg-olive-600 active:translate-y-px disabled:opacity-60"
+      >
+        {paying ? 'Оформляем…' : `Оплатить ${formatKopecks(cart.total)} и оформить`}
       </button>
+
+      {payError && (
+        <p className="rounded-lg bg-danger-bg px-3 py-2 text-center text-xs font-semibold text-danger">
+          {payError}
+        </p>
+      )}
+
       <p className="text-center text-xs text-ink-soft">
-        Завтра начислится <b className="text-brand-500">{cart.willEarn}</b> формул
+        {notLoggedIn
+          ? 'Войдите в кабинет, чтобы оформить заказ'
+          : (
+            <>
+              Завтра начислится <b className="text-brand-500">{cart.willEarn}</b> формул
+            </>
+          )}
       </p>
     </div>
   );
@@ -227,17 +294,23 @@ function Field({
   placeholder,
   value,
   onChange,
+  invalid,
 }: {
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
+  invalid?: boolean;
 }) {
   return (
     <input
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-xl border border-line bg-paper px-3 py-2.5 text-sm outline-none transition placeholder:text-ink-soft/60 focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+      className={`w-full rounded-xl border bg-paper px-3 py-2.5 text-sm outline-none transition placeholder:text-ink-soft/60 ${
+        invalid
+          ? 'border-danger bg-danger-bg focus:border-danger focus:ring-2 focus:ring-danger/20'
+          : 'border-line focus:border-brand-400 focus:ring-2 focus:ring-brand-100'
+      }`}
     />
   );
 }

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import {
   clearTokens,
+  fetchMe,
   loadTokens,
   refreshSession,
   saveName,
@@ -25,6 +26,8 @@ interface AuthContextValue {
   verify: (phone: string, code: string) => Promise<{ isNew: boolean }>;
   /** Сохранить ФИО (после регистрации). */
   setName: (fullName: string) => Promise<void>;
+  /** Перечитать профиль (напр. после заказа — обновить баланс). */
+  refreshUser: () => Promise<void>;
   logout: () => void;
 }
 
@@ -68,6 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const t = loadTokens();
+    if (!t) return;
+    try {
+      const me = await fetchMe(t.accessToken);
+      setUser(me);
+    } catch {
+      /* игнорируем — не критично */
+    }
+  }, []);
+
   const logout = useCallback(() => {
     clearTokens();
     setUser(null);
@@ -75,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ status, user, verify, setName, logout }}>
+    <AuthContext.Provider value={{ status, user, verify, setName, refreshUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

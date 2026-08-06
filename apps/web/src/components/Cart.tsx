@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatKopecks } from '@formulaedi/shared';
 import type { useCart } from '../hooks/useCart';
 import { CartContents, type Delivery } from './CartContents';
+import type { OrderAccepted } from '../features/orders/orderApi';
 
 type Cart = ReturnType<typeof useCart>;
 
@@ -10,10 +11,12 @@ export function DesktopCart({
   cart,
   delivery,
   setDelivery,
+  onOrderAccepted,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
+  onOrderAccepted: (o: OrderAccepted) => void;
 }) {
   return (
     <aside className="hidden lg:block">
@@ -29,7 +32,12 @@ export function DesktopCart({
             </button>
           )}
         </div>
-        <CartContents cart={cart} delivery={delivery} setDelivery={setDelivery} />
+        <CartContents
+          cart={cart}
+          delivery={delivery}
+          setDelivery={setDelivery}
+          onOrderAccepted={onOrderAccepted}
+        />
       </div>
     </aside>
   );
@@ -40,10 +48,12 @@ export function MobileCart({
   cart,
   delivery,
   setDelivery,
+  onOrderAccepted,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
+  onOrderAccepted: (o: OrderAccepted) => void;
 }) {
   const [open, setOpen] = useState(false);
   if (cart.count === 0) return null;
@@ -84,7 +94,15 @@ export function MobileCart({
                 Закрыть
               </button>
             </div>
-            <CartContents cart={cart} delivery={delivery} setDelivery={setDelivery} />
+            <CartContents
+              cart={cart}
+              delivery={delivery}
+              setDelivery={setDelivery}
+              onOrderAccepted={(o) => {
+                setOpen(false);
+                onOrderAccepted(o);
+              }}
+            />
           </div>
         </div>
       )}

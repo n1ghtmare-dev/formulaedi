@@ -71,6 +71,44 @@ export async function refreshSession(refreshToken: string): Promise<Tokens & { u
   return r.json();
 }
 
+export async function fetchMe(accessToken: string): Promise<AuthUser> {
+  const r = await fetch(`${BASE}/auth/me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok) throw new Error(await readError(r));
+  return r.json();
+}
+
+/**
+ * fetch с Bearer-токеном и авто-обновлением при 401 (одна попытка refresh).
+ * path — путь под /api, напр. '/orders'.
+ */
+export async function authFetch(path: string, init?: RequestInit): Promise<Response> {
+  const t = loadTokens();
+  if (!t) throw new Error('Требуется вход');
+  const call = (token: string) =>
+    fetch(`${BASE}${path}`, {
+      ...init,
+      headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` },
+    });
+  let res = await call(t.accessToken);
+  if (res.status === 401) {
+    try {
+      const r = await refreshSession(t.refreshToken);
+      saveTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
+      res = await call(r.accessToken);
+    } catch {
+      clearTokens();
+      throw new Error('Сессия истекла, войдите заново');
+    }
+  }
+  return res;
+}
+
+export async function readErr(r: Response): Promise<string> {
+  return readError(r);
+}
+
 export async function saveName(accessToken: string, fullName: string): Promise<AuthUser> {
   const r = await fetch(`${BASE}/auth/me`, {
     method: 'PATCH',

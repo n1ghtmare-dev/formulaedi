@@ -10,10 +10,13 @@ import { DesktopCart, MobileCart } from './components/Cart';
 import type { Delivery } from './components/CartContents';
 import { Footer } from './components/Footer';
 import { useAuth } from './features/auth/AuthContext';
+import { OrderAcceptedModal } from './features/orders/OrderAcceptedModal';
+import type { OrderAccepted } from './features/orders/orderApi';
 
 export function App() {
   const { user } = useAuth();
   const balance = user?.formulaBalance ?? 0; // реальный баланс формул при входе
+  const [accepted, setAccepted] = useState<OrderAccepted | null>(null);
   const [menu, setMenu] = useState<MenuCategoryDTO[]>([]);
   const [live, setLive] = useState(true);
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -46,6 +49,11 @@ export function App() {
   }, [menu]);
 
   const cart = useCart(itemsById, slugByItem, balance);
+
+  const onOrderAccepted = (o: OrderAccepted) => {
+    setAccepted(o);
+    cart.clear();
+  };
 
   // Скроллспай: активная категория по положению секций
   useEffect(() => {
@@ -104,7 +112,12 @@ export function App() {
           ))}
         </div>
 
-        <DesktopCart cart={cart} delivery={delivery} setDelivery={setDelivery} />
+        <DesktopCart
+          cart={cart}
+          delivery={delivery}
+          setDelivery={setDelivery}
+          onOrderAccepted={onOrderAccepted}
+        />
       </main>
 
       <Footer
@@ -112,7 +125,14 @@ export function App() {
         address={settings.cafe_address ?? 'Кочновский проезд, д.7 к.1, этаж 1'}
       />
 
-      <MobileCart cart={cart} delivery={delivery} setDelivery={setDelivery} />
+      <MobileCart
+        cart={cart}
+        delivery={delivery}
+        setDelivery={setDelivery}
+        onOrderAccepted={onOrderAccepted}
+      />
+
+      {accepted && <OrderAcceptedModal order={accepted} onClose={() => setAccepted(null)} />}
     </div>
   );
 }
