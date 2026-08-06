@@ -16,6 +16,15 @@ export function AccountButton() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Баннер сгорания: с 27-го числа до конца месяца.
+  const burnWarning = (() => {
+    if (status !== 'authed' || !user || user.formulaBalance <= 0) return null;
+    const now = new Date();
+    if (now.getDate() < 27) return null;
+    const first = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return `01.${String(first.getMonth() + 1).padStart(2, '0')}`;
+  })();
+
   const reset = () => {
     setStep('phone');
     setPhone('');
@@ -109,6 +118,11 @@ export function AccountButton() {
                     {user!.formulaBalance} формул
                   </div>
                 </div>
+                {burnWarning && (
+                  <div className="rounded-xl bg-danger-bg px-4 py-2.5 text-sm font-semibold text-danger">
+                    {user!.formulaBalance} формул сгорят {burnWarning}
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     logout();
