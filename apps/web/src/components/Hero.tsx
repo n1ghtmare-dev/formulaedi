@@ -46,14 +46,6 @@ export function Hero({ onBrowse }: { onBrowse: () => void }) {
             }}
           >
             <Salad size={120} strokeWidth={1} className="text-olive-700/45" />
-            <img
-              src="https://loremflickr.com/720/900/breakfast,bowl,healthy/?lock=42"
-              alt="Свежее блюдо"
-              className="absolute inset-0 h-full w-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
           </div>
           {/* плавающие карточки */}
           <div className="floaty absolute -left-4 top-8 rounded-2xl bg-paper px-4 py-3 shadow-[var(--shadow-lift)]">
