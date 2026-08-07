@@ -164,7 +164,13 @@ if [ -f .env ]; then
   say "СХЕМА БАЗЫ"
   # ВНИМАНИЕ: db push приводит базу к схеме без истории миграций. Пока проект не в бою —
   # это ок. До первого реального заказа переводим на prisma migrate deploy (см. DEPLOY.md).
-  npm run db:push -w apps/api 2>&1 | tail -8 || die "prisma db push не прошёл — проверь DATABASE_URL"
+  #
+  # --accept-data-loss ОБЯЗАТЕЛЕН в неинтерактивном раннере: db push останавливается и
+  # спрашивает подтверждение на «потенциально теряющих данные» изменениях (снятие
+  # уникального индекса, перевод колонки в NULL), а в CI спросить некого — падает молча.
+  # Реального удаления строк наши изменения не несут (DROP INDEX + ADD/MODIFY колонок).
+  # Дамп БД снят выше, так что откат возможен. Уйдёт вместе с переходом на migrate deploy.
+  npm run db:push -w apps/api -- --accept-data-loss 2>&1 | tail -8 || die "prisma db push не прошёл — проверь DATABASE_URL"
 
   say "SEED"
   npm run db:seed -w apps/api 2>&1 | tail -4 || echo "(seed пропущен — нормально, если данные уже есть)"
