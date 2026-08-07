@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Sparkles, LogOut, Mail, CheckCircle2 } from 'lucide-react';
+import { User, Sparkles, LogOut, Mail, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
 export function AccountButton() {
@@ -77,9 +77,26 @@ export function AccountButton() {
       </button>
 
       {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={close} />
-          <div className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-line bg-paper p-4 shadow-[0_18px_50px_-20px_rgba(90,104,45,0.45)]">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={close}
+        >
+          {/* затемнение фона */}
+          <div className="absolute inset-0 bg-[rgba(44,49,24,0.45)] backdrop-blur-sm" />
+          {/* карточка по центру */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative z-10 max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-3xl border border-line bg-paper p-5 pt-6 shadow-[0_30px_80px_-24px_rgba(90,104,45,0.55)]"
+          >
+            <button
+              onClick={close}
+              aria-label="Закрыть"
+              className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-ink-soft transition hover:bg-cream hover:text-olive-700"
+            >
+              <X size={18} />
+            </button>
             {status === 'authed' ? (
               <div className="space-y-3">
                 <div>
@@ -171,7 +188,7 @@ export function AccountButton() {
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
