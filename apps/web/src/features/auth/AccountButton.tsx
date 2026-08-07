@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { User, Sparkles, LogOut, Mail, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
@@ -76,7 +77,7 @@ export function AccountButton() {
         <span className="hidden sm:inline">Кабинет ·</span> {label}
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4"
           role="dialog"
@@ -188,7 +189,8 @@ export function AccountButton() {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
