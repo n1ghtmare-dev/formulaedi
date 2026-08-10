@@ -1,14 +1,13 @@
 import { PrismaClient } from '@prisma/client';
-import { randomBytes, scryptSync } from 'node:crypto';
 
 const prisma = new PrismaClient();
 
-// Тот же формат, что AuthService.hashPassword (scrypt, salt:hash).
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, 64).toString('hex');
-  return `${salt}:${hash}`;
-}
+const ADMIN_EMAIL = 'admin@formulaedi.ru';
+// Начальный пароль админа задан хэшем (scrypt, формат salt:hash). Сам пароль в
+// репозитории НЕ хранится. Сменить пароль можно в самой админке — сид его НЕ
+// перезаписывает, если пароль уже задан (bootstrap-once).
+const INITIAL_ADMIN_HASH =
+  '89a8042330acacb6e24c7e95a5fe6f55:ab56d130f14547846246a3960e05b4a7770f3d23032494e330b24c6df1c4d16e08ad69e4382e75a1f469dd2a94cc927db8a6fc6b5431447d15452e7ffc9eac97';
 
 // 9 категорий из ТЗ + примеры позиций (цены в копейках).
 const CATEGORIES: {
@@ -153,25 +152,34 @@ async function main() {
     }
   }
 
-  // Админ: почта из ADMIN_EMAIL, пароль из ADMIN_PASSWORD (задаётся в .env на сервере).
-  // Без пароля админ существует, но войти в админку не сможет (беспарольный вход ему закрыт).
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@formulaedi.ru';
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const adminData: {
-    role: 'ADMIN';
-    emailConfirmed: boolean;
-    fullName: string;
-    passwordHash?: string;
-  } = { role: 'ADMIN', emailConfirmed: true, fullName: 'Администратор' };
-  if (adminPassword) adminData.passwordHash = hashPassword(adminPassword);
-
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: adminData,
-    create: { email: adminEmail, ...adminData },
-  });
-  if (adminPassword) console.log(`✅ Админ ${adminEmail}: пароль установлен`);
-  else console.warn(`⚠ ADMIN_PASSWORD не задан — ${adminEmail} не сможет войти в админку`);
+  // Админ. Пароль ставим только если его ещё нет — смену в панели не затираем.
+  const admin = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
+  if (!admin) {
+    await prisma.user.create({
+      data: {
+        email: ADMIN_EMAIL,
+        fullName: 'Администратор',
+        role: 'ADMIN',
+        emailConfirmed: true,
+        passwordHash: INITIAL_ADMIN_HASH,
+      },
+    });
+    console.log(`✅ Админ ${ADMIN_EMAIL} создан с начальным паролем`);
+  } else {
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: {
+        role: 'ADMIN',
+        emailConfirmed: true,
+        passwordHash: admin.passwordHash ?? INITIAL_ADMIN_HASH,
+      },
+    });
+    console.log(
+      admin.passwordHash
+        ? `✅ Админ ${ADMIN_EMAIL}: пароль сохранён (задан ранее)`
+        : `✅ Админу ${ADMIN_EMAIL} выставлен начальный пароль`,
+    );
+  }
 
   const cats = await prisma.menuCategory.count();
   const items = await prisma.menuItem.count();

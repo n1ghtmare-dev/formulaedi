@@ -6,9 +6,11 @@ import {
   Users as UsersIcon,
   Sparkles,
   LogOut,
+  KeyRound,
 } from 'lucide-react';
 import { loadAdminTokens, clearAdminTokens } from './adminApi';
 import { AdminLogin } from './AdminLogin';
+import { ChangePasswordModal } from './ChangePassword';
 import { Dashboard } from './Dashboard';
 import { Products } from './Products';
 import { Orders } from './Orders';
@@ -28,6 +30,7 @@ const NAV: { key: Tab; label: string; Icon: typeof LayoutDashboard }[] = [
 export function AdminApp() {
   const [authed, setAuthed] = useState(() => !!loadAdminTokens());
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [showPwd, setShowPwd] = useState(false);
 
   if (!authed) return <AdminLogin onSuccess={() => setAuthed(true)} />;
 
@@ -63,6 +66,13 @@ export function AdminApp() {
           ))}
         </nav>
         <button
+          onClick={() => setShowPwd(true)}
+          className="mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-olive-700 transition hover:bg-brand-50 sm:mx-3"
+        >
+          <KeyRound size={18} strokeWidth={2} />
+          <span className="hidden sm:block">Пароль</span>
+        </button>
+        <button
           onClick={logout}
           className="mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink-soft transition hover:bg-danger-bg hover:text-danger sm:mx-3"
         >
@@ -70,6 +80,8 @@ export function AdminApp() {
           <span className="hidden sm:block">Выйти</span>
         </button>
       </aside>
+
+      {showPwd && <ChangePasswordModal onClose={() => setShowPwd(false)} />}
 
       {/* Контент */}
       <main className="flex-1 overflow-x-auto p-4 sm:p-8">
