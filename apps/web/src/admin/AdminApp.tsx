@@ -7,6 +7,7 @@ import {
   Sparkles,
   LogOut,
   KeyRound,
+  Home,
 } from 'lucide-react';
 import { loadAdminTokens, clearAdminTokens } from './adminApi';
 import { AdminLogin } from './AdminLogin';
@@ -65,6 +66,13 @@ export function AdminApp() {
             </button>
           ))}
         </nav>
+        <a
+          href="/"
+          className="mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-olive-700 transition hover:bg-brand-50 sm:mx-3"
+        >
+          <Home size={18} strokeWidth={2} />
+          <span className="hidden sm:block">На сайт</span>
+        </a>
         <button
           onClick={() => setShowPwd(true)}
           className="mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-olive-700 transition hover:bg-brand-50 sm:mx-3"
