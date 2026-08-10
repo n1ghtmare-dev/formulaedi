@@ -36,7 +36,7 @@ export class AuthService {
     return `${salt}:${derived}`;
   }
 
-  private verifyPassword(password: string, stored: string): boolean {
+  verifyPassword(password: string, stored: string): boolean {
     const [salt, hash] = stored.split(':');
     if (!salt || !hash) return false;
     const derived = scryptSync(password, salt, 64);

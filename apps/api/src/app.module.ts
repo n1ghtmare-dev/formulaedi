@@ -8,6 +8,7 @@ import { SettingsModule } from './settings/settings.module';
 import { MenuModule } from './menu/menu.module';
 import { OrdersModule } from './orders/orders.module';
 import { AuthModule } from './auth/auth.module';
+import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
 
 /**
@@ -48,6 +49,7 @@ const WEB_DIST =
     MenuModule,
     OrdersModule,
     AuthModule,
+    AdminModule,
     // TODO: PaymentsModule (ЮKassa), LoyaltyModule (начисление/сгорание через BullMQ)
   ],
   controllers: [AppController],
