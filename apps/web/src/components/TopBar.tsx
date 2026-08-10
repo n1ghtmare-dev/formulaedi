@@ -1,6 +1,12 @@
 import { AccountButton } from '../features/auth/AccountButton';
 
-export function TopBar({ workHours }: { workHours: string }) {
+export function TopBar({
+  workHours,
+  supportEmail,
+}: {
+  workHours: string;
+  supportEmail: string;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-cream/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-4 py-2.5 sm:px-6">
@@ -17,7 +23,7 @@ export function TopBar({ workHours }: { workHours: string }) {
           {workHours}
         </span>
 
-        <AccountButton />
+        <AccountButton supportEmail={supportEmail} />
       </div>
     </header>
   );

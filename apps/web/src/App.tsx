@@ -3,6 +3,7 @@ import type { MenuCategoryDTO, MenuItemDTO } from '@formulaedi/shared';
 import { fetchMenu, fetchSettings } from './api';
 import { useCart } from './hooks/useCart';
 import { TopBar } from './components/TopBar';
+import { PromoBanner } from './components/PromoBanner';
 import { Hero } from './components/Hero';
 import { CategoryNav } from './components/CategoryNav';
 import { MenuSection } from './components/MenuSection';
@@ -67,6 +68,11 @@ export function App() {
     cart.clear();
   };
 
+  // Начали новый заказ (добавили позиции) → убираем подтверждение из зоны чека.
+  useEffect(() => {
+    if (cart.count > 0 && accepted) setAccepted(null);
+  }, [cart.count, accepted]);
+
   // Скроллспай: активная категория по положению секций
   useEffect(() => {
     if (menu.length === 0) return;
@@ -101,7 +107,11 @@ export function App() {
 
   return (
     <div className="min-h-[100dvh] pb-24 lg:pb-0">
-      <TopBar workHours={workHours} />
+      <TopBar
+        workHours={workHours}
+        supportEmail={settings.contact_email ?? 'info@formulaedi.ru'}
+      />
+      <PromoBanner />
       <Hero onBrowse={() => scrollTo(menu[0]?.slug ?? '')} />
       <CategoryNav categories={menu} active={active} onPick={scrollTo} />
 
@@ -129,6 +139,7 @@ export function App() {
           delivery={delivery}
           setDelivery={setDelivery}
           onOrderAccepted={onOrderAccepted}
+          accepted={accepted}
         />
       </main>
 

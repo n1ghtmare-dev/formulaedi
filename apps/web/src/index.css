@@ -109,6 +109,12 @@
     100% { transform: scale(1); }
   }
   .pop { animation: pop 0.32s ease; }
+
+  @keyframes promoFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .promo-fade { animation: promoFade 0.5s ease; }
 }
 
 @media (prefers-reduced-motion: reduce) {

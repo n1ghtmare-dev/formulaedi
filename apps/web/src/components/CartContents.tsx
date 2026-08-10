@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatKopecks } from '@formulaedi/shared';
 import { BUILDING_LABELS } from '@formulaedi/shared';
+import { CheckCircle2 } from 'lucide-react';
 import type { useCart } from '../hooks/useCart';
 import { FoodImage } from './FoodImage';
 import { ShoppingBag, Bike, Store } from '../lib/icons';
@@ -22,16 +23,39 @@ export function CartContents({
   delivery,
   setDelivery,
   onOrderAccepted,
+  accepted,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
   onOrderAccepted: (order: OrderAccepted) => void;
+  accepted?: OrderAccepted | null;
 }) {
   const { status, refreshUser } = useAuth();
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+
+  // По ТЗ: после оплаты текст «Заказ принят» дублируется в зоне чека и держится,
+  // пока пользователь не начал новый заказ (не добавил позиции в пустую корзину).
+  if (accepted && cart.count === 0) {
+    return (
+      <div className="space-y-4 text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand-50 text-brand-500">
+          <CheckCircle2 size={32} strokeWidth={1.75} />
+        </div>
+        <div>
+          <p className="font-serif text-lg text-olive-800">
+            Заказ №{accepted.orderNumber} принят
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">{accepted.message}</p>
+        </div>
+        <p className="text-xs text-ink-soft">
+          Добавьте блюда из меню, чтобы оформить новый заказ.
+        </p>
+      </div>
+    );
+  }
 
   if (cart.count === 0) {
     return (

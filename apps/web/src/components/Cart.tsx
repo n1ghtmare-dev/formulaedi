@@ -12,11 +12,13 @@ export function DesktopCart({
   delivery,
   setDelivery,
   onOrderAccepted,
+  accepted,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
   onOrderAccepted: (o: OrderAccepted) => void;
+  accepted?: OrderAccepted | null;
 }) {
   return (
     <aside className="hidden lg:block">
@@ -37,6 +39,7 @@ export function DesktopCart({
           delivery={delivery}
           setDelivery={setDelivery}
           onOrderAccepted={onOrderAccepted}
+          accepted={accepted}
         />
       </div>
     </aside>

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { User, Sparkles, LogOut, Mail, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
-export function AccountButton() {
+export function AccountButton({ supportEmail }: { supportEmail: string }) {
   const { status, user, login, requestConfirmation, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -188,6 +188,14 @@ export function AccountButton() {
                 {error && <div className="text-xs font-semibold text-danger">{error}</div>}
               </div>
             )}
+
+            {/* Ссылка на почту — во всех состояниях кабинета (по ТЗ) */}
+            <a
+              href={`mailto:${supportEmail}`}
+              className="mt-4 flex items-center justify-center gap-1.5 border-t border-line pt-3 text-xs font-semibold text-ink-soft transition hover:text-brand-500"
+            >
+              <Mail size={13} /> Написать нам на почту
+            </a>
           </div>
         </div>,
         document.body,
