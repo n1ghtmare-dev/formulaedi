@@ -10,6 +10,15 @@ export class LoginDto {
   fullName?: string;
 }
 
+export class AdminLoginDto {
+  @IsEmail({}, { message: 'Некорректная почта' })
+  email!: string;
+
+  @IsString()
+  @Length(6, 200, { message: 'Пароль не короче 6 символов' })
+  password!: string;
+}
+
 export class RefreshDto {
   @IsString()
   refreshToken!: string;

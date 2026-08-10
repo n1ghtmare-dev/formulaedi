@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthTokens, UserDTO } from '@formulaedi/shared';
@@ -29,6 +29,21 @@ export class AuthService {
     return createHash('sha256').update(value).digest('hex');
   }
 
+  /** Хэш пароля (scrypt из стандартной библиотеки, без внешних зависимостей). */
+  hashPassword(password: string): string {
+    const salt = randomBytes(16).toString('hex');
+    const derived = scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${derived}`;
+  }
+
+  private verifyPassword(password: string, stored: string): boolean {
+    const [salt, hash] = stored.split(':');
+    if (!salt || !hash) return false;
+    const derived = scryptSync(password, salt, 64);
+    const hashBuf = Buffer.from(hash, 'hex');
+    return hashBuf.length === derived.length && timingSafeEqual(hashBuf, derived);
+  }
+
   private toDto(user: User): UserDTO {
     return {
       id: user.id,
@@ -47,6 +62,12 @@ export class AuthService {
   ): Promise<AuthTokens & { user: UserDTO; isNew: boolean }> {
     const email = this.normalizeEmail(rawEmail);
     const existing = await this.prisma.user.findUnique({ where: { email } });
+
+    // Безопасность: у админа обязателен пароль — беспарольный вход ему запрещён.
+    if (existing && existing.role === 'ADMIN') {
+      throw new UnauthorizedException('Для этого аккаунта нужен вход с паролем');
+    }
+
     const isNew = !existing;
     const user =
       existing ??
@@ -56,6 +77,26 @@ export class AuthService {
 
     const tokens = await this.issueTokens(user.id, email, user.role);
     return { ...tokens, isNew, user: this.toDto(user) };
+  }
+
+  /** Вход в админку: почта + пароль, только для роли ADMIN. */
+  async adminLogin(
+    rawEmail: string,
+    password: string,
+  ): Promise<AuthTokens & { user: UserDTO }> {
+    const email = this.normalizeEmail(rawEmail);
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (
+      !user ||
+      user.role !== 'ADMIN' ||
+      !user.passwordHash ||
+      !this.verifyPassword(password, user.passwordHash)
+    ) {
+      throw new UnauthorizedException('Неверная почта или пароль');
+    }
+    if (user.isBlocked) throw new UnauthorizedException('Аккаунт заблокирован');
+    const tokens = await this.issueTokens(user.id, email, user.role);
+    return { ...tokens, user: this.toDto(user) };
   }
 
   /** Данные текущего пользователя для личного кабинета. */

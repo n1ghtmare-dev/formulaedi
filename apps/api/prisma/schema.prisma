@@ -28,6 +28,7 @@ model User {
   emailTokenExp  DateTime? // срок действия токена
   phone          String? // телефон для курьера (вводится при оформлении)
   fullName       String? // ФИО
+  passwordHash   String? // только для ADMIN: scrypt-хэш (клиенты входят без пароля)
   role           UserRole @default(CUSTOMER)
   formulaBalance Int      @default(0) // денормализованный баланс формул (источник правды — ledger)
   isBlocked      Boolean  @default(false)

@@ -1,6 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import { randomBytes, scryptSync } from 'node:crypto';
 
 const prisma = new PrismaClient();
+
+// Тот же формат, что AuthService.hashPassword (scrypt, salt:hash).
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
 
 // 9 категорий из ТЗ + примеры позиций (цены в копейках).
 const CATEGORIES: {
@@ -145,12 +153,25 @@ async function main() {
     }
   }
 
-  // Демо-админ (вход по почте, роль ADMIN)
+  // Админ: почта из ADMIN_EMAIL, пароль из ADMIN_PASSWORD (задаётся в .env на сервере).
+  // Без пароля админ существует, но войти в админку не сможет (беспарольный вход ему закрыт).
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@formulaedi.ru';
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminData: {
+    role: 'ADMIN';
+    emailConfirmed: boolean;
+    fullName: string;
+    passwordHash?: string;
+  } = { role: 'ADMIN', emailConfirmed: true, fullName: 'Администратор' };
+  if (adminPassword) adminData.passwordHash = hashPassword(adminPassword);
+
   await prisma.user.upsert({
-    where: { email: 'admin@formulaedi.ru' },
-    update: { role: 'ADMIN' },
-    create: { email: 'admin@formulaedi.ru', fullName: 'Администратор', role: 'ADMIN', emailConfirmed: true },
+    where: { email: adminEmail },
+    update: adminData,
+    create: { email: adminEmail, ...adminData },
   });
+  if (adminPassword) console.log(`✅ Админ ${adminEmail}: пароль установлен`);
+  else console.warn(`⚠ ADMIN_PASSWORD не задан — ${adminEmail} не сможет войти в админку`);
 
   const cats = await prisma.menuCategory.count();
   const items = await prisma.menuItem.count();

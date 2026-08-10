@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, RefreshDto, UpdateProfileDto } from './dto/auth.dto';
+import { AdminLoginDto, LoginDto, RefreshDto, UpdateProfileDto } from './dto/auth.dto';
 import { JwtGuard, type AuthUser } from './jwt.guard';
 import { CurrentUser } from './current-user.decorator';
 
@@ -23,6 +23,12 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto.email, dto.fullName);
+  }
+
+  // POST /api/auth/admin-login — вход в админку (почта + пароль, роль ADMIN)
+  @Post('admin-login')
+  adminLogin(@Body() dto: AdminLoginDto) {
+    return this.auth.adminLogin(dto.email, dto.password);
   }
 
   // POST /api/auth/refresh — обновить сессию
