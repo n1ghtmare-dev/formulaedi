@@ -3,10 +3,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
-import { LoyaltyService } from '../loyalty/loyalty.service';
+import { PaymentsService } from '../payments/payments.service';
 import {
   computeOrderTotals,
   formulasToEarn,
@@ -28,7 +29,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
-    private readonly loyalty: LoyaltyService,
+    private readonly payments: PaymentsService,
   ) {}
 
   /** Расчёт корзины без создания заказа (для «живого чека»). */
@@ -68,11 +69,18 @@ export class OrdersService {
   }
 
   /**
-   * Создание заказа: пересчёт по ценам БД, списание формул, начисление 7% «завтра».
-   * Всё атомарно в транзакции. Оплата пока в статусе PENDING (заглушка mock-confirm
-   * до подключения ЮKassa).
+   * Создание заказа: пересчёт по ценам БД, фиксация суммы и намерения по формулам.
+   * Формулы (списание + начисление 7%) проводятся НЕ здесь, а при подтверждённой оплате
+   * (PayKeeper callback / markPaid) — неоплаченные заказы баланс не трогают.
+   * Возвращает заказ + paymentUrl (страница оплаты PayKeeper) либо paymentUrl=null в dev.
    */
   async create(userId: string, dto: CreateOrderDto) {
+    // 0. В проде без настроенного PayKeeper заказ не создаём — иначе dev-заглушка
+    // пометила бы его оплаченным без реальной оплаты.
+    if (process.env.NODE_ENV === 'production' && !this.payments.paykeeperConfigured()) {
+      throw new ServiceUnavailableException('Оплата временно недоступна. Попробуйте позже.');
+    }
+
     // 1. Цены и названия — из БД
     const ids = dto.items.map((i) => i.menuItemId);
     const menuItems = await this.prisma.menuItem.findMany({
@@ -115,51 +123,45 @@ export class OrdersService {
       spendMaxPercent,
     );
 
-    const now = new Date();
-
-    // 5. Транзакция: заказ + позиции + платёж + леджер
-    const order = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.order.create({
-        data: {
-          userId,
-          contactPhone: dto.contactPhone,
-          status: 'AWAITING_PAYMENT',
-          deliveryType: dto.deliveryType,
-          building: dto.deliveryType === 'DELIVERY' ? dto.building : null,
-          floor: dto.deliveryType === 'DELIVERY' ? dto.floor : null,
-          room: dto.deliveryType === 'DELIVERY' ? dto.room : null,
-          subtotalKopecks: totals.subtotalKopecks,
-          cutleryCount: dto.cutleryCount ?? 0,
-          formulasSpent: totals.formulasSpent,
-          formulaDiscountKopecks: totals.formulaDiscountKopecks,
-          totalKopecks: totals.totalKopecks,
-          formulasToEarn: totals.formulasToEarn,
-          items: {
-            create: lines.map((l) => ({
-              menuItemId: l.menuItemId,
-              nameSnapshot: l.nameSnapshot,
-              priceKopecks: l.priceKopecks,
-              quantity: l.quantity,
-              lineTotalKopecks: l.lineTotalKopecks,
-            })),
-          },
-          payment: {
-            create: {
-              provider: 'YOOKASSA',
-              status: 'PENDING',
-              amountKopecks: totals.totalKopecks,
-            },
+    // 5. Заказ + позиции + платёж (PENDING). Формулы — при оплате.
+    const order = await this.prisma.order.create({
+      data: {
+        userId,
+        contactPhone: dto.contactPhone,
+        status: 'AWAITING_PAYMENT',
+        deliveryType: dto.deliveryType,
+        building: dto.deliveryType === 'DELIVERY' ? dto.building : null,
+        floor: dto.deliveryType === 'DELIVERY' ? dto.floor : null,
+        room: dto.deliveryType === 'DELIVERY' ? dto.room : null,
+        subtotalKopecks: totals.subtotalKopecks,
+        cutleryCount: dto.cutleryCount ?? 0,
+        formulasSpent: totals.formulasSpent,
+        formulaDiscountKopecks: totals.formulaDiscountKopecks,
+        totalKopecks: totals.totalKopecks,
+        formulasToEarn: totals.formulasToEarn,
+        items: {
+          create: lines.map((l) => ({
+            menuItemId: l.menuItemId,
+            nameSnapshot: l.nameSnapshot,
+            priceKopecks: l.priceKopecks,
+            quantity: l.quantity,
+            lineTotalKopecks: l.lineTotalKopecks,
+          })),
+        },
+        payment: {
+          create: {
+            provider: 'PAYKEEPER',
+            status: 'PENDING',
+            amountKopecks: totals.totalKopecks,
           },
         },
-      });
-
-      await this.loyalty.spend(tx, userId, created.id, totals.formulasSpent);
-      await this.loyalty.accruePending(tx, userId, created.id, totals.formulasToEarn, now);
-
-      return created;
+      },
     });
 
-    return this.toDto(order);
+    // 6. Счёт PayKeeper (в dev без настроек вернётся null)
+    const paymentUrl = await this.payments.startPayment(order.id);
+
+    return { ...this.toDto(order), paymentUrl };
   }
 
   /** Заказ по id (только владельцу) с позициями. */
@@ -184,40 +186,41 @@ export class OrdersService {
   }
 
   /**
-   * ЗАГЛУШКА оплаты (до ЮKassa): помечает платёж SUCCEEDED и заказ PAID.
-   * Начисленные формулы остаются PENDING и активируются планировщиком «завтра».
-   * Возвращает данные для окна «Ваш заказ №___ принят…».
+   * DEV-подтверждение оплаты (когда PayKeeper не настроен локально): проводит оплату
+   * тем же путём, что и реальный callback (markPaid → формулы + статус PAID).
    */
   async mockConfirm(userId: string, id: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id },
-      include: { payment: true },
-    });
+    // Заглушка — только вне прода. В проде оплату подтверждает только PayKeeper callback.
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Недоступно');
+    }
+    const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) throw new NotFoundException('Заказ не найден');
     if (order.userId !== userId) throw new ForbiddenException('Нет доступа к заказу');
 
-    const now = new Date();
-    await this.prisma.$transaction(async (tx) => {
-      if (order.payment) {
-        await tx.payment.update({
-          where: { id: order.payment.id },
-          data: { status: 'SUCCEEDED', paidAt: now },
-        });
-      }
-      await tx.order.update({ where: { id }, data: { status: 'PAID', paidAt: now } });
-    });
+    await this.payments.markPaid(id);
+    return this.acceptedInfo(order.orderNumber);
+  }
 
+  /** Последний оплаченный заказ пользователя — для окна «Заказ принят» после возврата с оплаты. */
+  async lastAccepted(userId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { userId, status: 'PAID' },
+      orderBy: { paidAt: 'desc' },
+    });
+    if (!order) return null;
+    return this.acceptedInfo(order.orderNumber);
+  }
+
+  /** Текст окна «Ваш заказ №___ принят…» из ТЗ. */
+  private async acceptedInfo(orderNumber: number) {
     const address = await this.settings
       .getAll()
       .then((s) => s.cafe_address ?? 'Кочновский проезд, д.7 к.1, этаж 1');
-
     return {
-      orderNumber: order.orderNumber,
+      orderNumber,
       status: 'PAID',
-      message: ORDER_ACCEPTED_TEXT.replace('%N%', String(order.orderNumber)).replace(
-        '%ADDR%',
-        address,
-      ),
+      message: ORDER_ACCEPTED_TEXT.replace('%N%', String(orderNumber)).replace('%ADDR%', address),
     };
   }
 

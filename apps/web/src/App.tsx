@@ -12,7 +12,7 @@ import type { Delivery } from './components/CartContents';
 import { Footer } from './components/Footer';
 import { useAuth } from './features/auth/AuthContext';
 import { OrderAcceptedModal } from './features/orders/OrderAcceptedModal';
-import type { OrderAccepted } from './features/orders/orderApi';
+import { getLastAccepted, type OrderAccepted } from './features/orders/orderApi';
 
 export function App() {
   const { user, refreshUser } = useAuth();
@@ -25,6 +25,20 @@ export function App() {
     if (params.get('email') === 'confirmed') {
       refreshUser();
       params.delete('email');
+      const qs = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    }
+  }, [refreshUser]);
+
+  // Возврат со страницы оплаты PayKeeper (?paid=1) — показываем окно «Заказ принят».
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('paid') === '1') {
+      getLastAccepted()
+        .then((a) => a && setAccepted(a))
+        .catch(() => {});
+      refreshUser();
+      params.delete('paid');
       const qs = params.toString();
       window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
     }

@@ -202,6 +202,7 @@ model OrderItem {
 
 enum PaymentProvider {
   YOOKASSA
+  PAYKEEPER
 }
 
 enum PaymentStatus {
@@ -215,8 +216,8 @@ model Payment {
   id                String          @id @default(cuid())
   orderId           String          @unique
   order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  provider          PaymentProvider @default(YOOKASSA)
-  providerPaymentId String?         @unique // id платежа в ЮKassa
+  provider          PaymentProvider @default(PAYKEEPER)
+  providerPaymentId String?         @unique // id счёта/платежа у провайдера (invoice_id PayKeeper)
   status            PaymentStatus   @default(PENDING)
   amountKopecks     Int
   confirmationUrl   String? @db.Text // ссылка на страницу оплаты

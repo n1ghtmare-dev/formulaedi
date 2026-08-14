@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { SettingsModule } from './settings/settings.module';
 import { MenuModule } from './menu/menu.module';
 import { OrdersModule } from './orders/orders.module';
+import { PaymentsModule } from './payments/payments.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
@@ -48,9 +49,9 @@ const WEB_DIST =
     SettingsModule,
     MenuModule,
     OrdersModule,
+    PaymentsModule,
     AuthModule,
     AdminModule,
-    // TODO: PaymentsModule (ЮKassa), LoyaltyModule (начисление/сгорание через BullMQ)
   ],
   controllers: [AppController],
 })

@@ -102,6 +102,12 @@ export function CartContents({
         room: need ? delivery.room : undefined,
         contactPhone,
       });
+      if (order.paymentUrl) {
+        // Уходим на страницу оплаты PayKeeper. Вернёмся на /?paid=1 (см. App).
+        window.location.href = order.paymentUrl;
+        return;
+      }
+      // DEV: PayKeeper не настроен — подтверждаем заглушкой.
       const accepted = await confirmOrder(order.id);
       await refreshUser();
       onOrderAccepted(accepted);

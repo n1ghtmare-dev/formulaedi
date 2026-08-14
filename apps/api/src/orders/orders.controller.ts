@@ -29,6 +29,14 @@ export class OrdersController {
     return this.orders.listMine(user.userId);
   }
 
+  // GET /api/orders/last-accepted — последний оплаченный (для окна после возврата с оплаты)
+  // ВАЖНО: объявлен до :id, иначе перехватится параметрическим маршрутом.
+  @Get('last-accepted')
+  @UseGuards(JwtGuard)
+  lastAccepted(@CurrentUser() user: AuthUser) {
+    return this.orders.lastAccepted(user.userId);
+  }
+
   // GET /api/orders/:id — заказ владельца
   @Get(':id')
   @UseGuards(JwtGuard)
