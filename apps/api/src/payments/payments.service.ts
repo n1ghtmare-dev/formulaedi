@@ -17,14 +17,6 @@ export class PaymentsService {
     return this.paykeeper.isConfigured();
   }
 
-  paykeeperEnvPresence(): Record<string, boolean> {
-    return this.paykeeper.envPresence();
-  }
-
-  paykeeperSelfTest(): Promise<Record<string, unknown>> {
-    return this.paykeeper.selfTest();
-  }
-
   /**
    * Выставить счёт в PayKeeper для заказа и вернуть URL страницы оплаты.
    * Если PayKeeper не настроен (локальная разработка) — возвращаем null,

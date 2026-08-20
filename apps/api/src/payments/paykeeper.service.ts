@@ -41,45 +41,6 @@ export class PaykeeperService {
     return !!(this.server && this.user && this.password && this.secret);
   }
 
-  /** Диагностика: какие переменные окружения видны (без значений). */
-  envPresence(): Record<string, boolean> {
-    return {
-      server: !!this.server,
-      user: !!this.user,
-      password: !!this.password,
-      secret: !!this.secret,
-    };
-  }
-
-  /** Диагностика связи: токен + тестовый счёт (1 ₽). Секреты не раскрывает. */
-  async selfTest(): Promise<Record<string, unknown>> {
-    const out: Record<string, unknown> = { serverHost: this.server };
-    try {
-      const token = await this.getToken();
-      out.tokenOk = true;
-      out.tokenLen = token.length;
-      try {
-        const inv = await this.createInvoice({
-          orderNumber: 0,
-          amountKopecks: 100,
-          clientName: 'selftest',
-          email: 'test@formulaedi.ru',
-          phone: '+70000000000',
-          serviceName: 'selftest',
-        });
-        out.invoiceOk = !!inv.invoiceUrl;
-        out.invoiceUrl = inv.invoiceUrl;
-      } catch (e) {
-        out.invoiceOk = false;
-        out.invoiceErr = (e as Error).message;
-      }
-    } catch (e) {
-      out.tokenOk = false;
-      out.tokenErr = (e as Error).message;
-    }
-    return out;
-  }
-
   private rubles(kopecks: number): string {
     return (kopecks / 100).toFixed(2);
   }
