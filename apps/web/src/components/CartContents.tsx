@@ -24,12 +24,16 @@ export function CartContents({
   setDelivery,
   onOrderAccepted,
   accepted,
+  workFrom,
+  workTo,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
   onOrderAccepted: (order: OrderAccepted) => void;
   accepted?: OrderAccepted | null;
+  workFrom?: string;
+  workTo?: string;
 }) {
   const { status, refreshUser } = useAuth();
   const [paying, setPaying] = useState(false);
@@ -71,13 +75,15 @@ export function CartContents({
   const notLoggedIn = status !== 'authed';
   const floorMissing = need && !delivery.floor.trim();
   const roomMissing = need && !delivery.room.trim();
-  const phoneDigits = delivery.phone.replace(/\D/g, '').slice(-10);
-  const phoneMissing = phoneDigits.length !== 10;
-  const contactPhone = `+7${phoneDigits}`;
+  const phoneNat = phoneNational(delivery.phone); // 10 цифр нац. номера (первая — 9)
+  const phoneMissing = phoneNat.length !== 10;
+  const contactPhone = `+7${phoneNat}`;
   const invalid = floorMissing || roomMissing || phoneMissing;
+  const open = isOpenNow(workFrom, workTo);
 
   const onPay = async () => {
     setPayError(null);
+    if (!open) return; // вне часов работы оформить нельзя
     // Гейтинг по ТЗ: без входа, телефона и адреса оформить нельзя
     if (notLoggedIn || invalid) {
       setShowErrors(true);
@@ -171,10 +177,11 @@ export function CartContents({
       {/* Доставка */}
       <div className="space-y-3 border-t border-line pt-4">
         <Field
-          placeholder="Телефон для связи"
+          placeholder="Телефон: +7 900 000 00 00"
           value={delivery.phone}
-          onChange={(v) => setDelivery({ ...delivery, phone: v })}
+          onChange={(v) => setDelivery({ ...delivery, phone: formatPhone(phoneNational(v)) })}
           invalid={showErrors && phoneMissing}
+          inputMode="tel"
         />
         <div className="grid grid-cols-2 gap-2">
           <Toggle active={need} onClick={() => setDelivery({ ...delivery, type: 'DELIVERY' })}>
@@ -201,14 +208,16 @@ export function CartContents({
               <Field
                 placeholder="Этаж"
                 value={delivery.floor}
-                onChange={(v) => setDelivery({ ...delivery, floor: v })}
+                onChange={(v) => setDelivery({ ...delivery, floor: capNumber(v, 10) })}
                 invalid={showErrors && floorMissing}
+                inputMode="numeric"
               />
               <Field
                 placeholder="Комната"
                 value={delivery.room}
-                onChange={(v) => setDelivery({ ...delivery, room: v })}
+                onChange={(v) => setDelivery({ ...delivery, room: capNumber(v, 999) })}
                 invalid={showErrors && roomMissing}
+                inputMode="numeric"
               />
             </div>
           </div>
@@ -235,10 +244,18 @@ export function CartContents({
 
       <button
         onClick={onPay}
-        disabled={paying}
-        className="w-full rounded-full bg-brand-500 py-3.5 font-bold text-white shadow-[var(--shadow-soft)] transition hover:bg-olive-600 active:translate-y-px disabled:opacity-60"
+        disabled={paying || !open}
+        className={`w-full rounded-full py-3.5 font-bold shadow-[var(--shadow-soft)] transition active:translate-y-px ${
+          open
+            ? 'bg-brand-500 text-white hover:bg-olive-600 disabled:opacity-60'
+            : 'cursor-not-allowed bg-line text-ink-soft'
+        }`}
       >
-        {paying ? 'Оформляем…' : `Оплатить ${formatKopecks(cart.total)} и оформить`}
+        {!open
+          ? `Работаем с ${workFrom} до ${workTo}`
+          : paying
+            ? 'Оформляем…'
+            : `Оплатить ${formatKopecks(cart.total)} и оформить`}
       </button>
 
       {payError && (
@@ -337,16 +354,19 @@ function Field({
   value,
   onChange,
   invalid,
+  inputMode,
 }: {
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
   invalid?: boolean;
+  inputMode?: 'text' | 'numeric' | 'tel';
 }) {
   return (
     <input
       value={value}
       placeholder={placeholder}
+      inputMode={inputMode}
       onChange={(e) => onChange(e.target.value)}
       className={`w-full rounded-xl border bg-paper px-3 py-2.5 text-sm outline-none transition placeholder:text-ink-soft/60 ${
         invalid
@@ -355,4 +375,43 @@ function Field({
       }`}
     />
   );
+}
+
+// ——— Хелперы ———
+
+/** Номер телефона: убираем код страны (8/7), первая цифра нац. номера только «9», ≤10 цифр. */
+function phoneNational(raw: string): string {
+  let d = raw.replace(/\D/g, '');
+  if (d[0] === '8' || d[0] === '7') d = d.slice(1); // 8… / 7… → код страны, отбрасываем
+  if (d && d[0] !== '9') d = ''; // мобильный РФ: +7 9XX…
+  return d.slice(0, 10);
+}
+
+/** Формат ввода: +7 967 192 11 11. */
+function formatPhone(national: string): string {
+  if (!national) return '';
+  const parts = ['+7'];
+  const groups = [national.slice(0, 3), national.slice(3, 6), national.slice(6, 8), national.slice(8, 10)];
+  for (const g of groups) if (g) parts.push(g);
+  return parts.join(' ');
+}
+
+/** Только цифры, без ведущих нулей, не больше max. */
+function capNumber(raw: string, max: number): string {
+  const d = raw.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!d) return '';
+  return String(Math.min(parseInt(d, 10), max));
+}
+
+/** Открыто ли сейчас (часы "HH:MM"). Если часы не заданы — не блокируем. */
+function isOpenNow(from?: string, to?: string): boolean {
+  if (!from || !to) return true;
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const [fh, fm] = from.split(':').map(Number);
+  const [th, tm] = to.split(':').map(Number);
+  const f = fh * 60 + (fm || 0);
+  const t = th * 60 + (tm || 0);
+  if (f === t) return true;
+  return f < t ? cur >= f && cur < t : cur >= f || cur < t; // через полночь
 }

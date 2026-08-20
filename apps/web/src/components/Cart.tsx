@@ -13,12 +13,16 @@ export function DesktopCart({
   setDelivery,
   onOrderAccepted,
   accepted,
+  workFrom,
+  workTo,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
   onOrderAccepted: (o: OrderAccepted) => void;
   accepted?: OrderAccepted | null;
+  workFrom?: string;
+  workTo?: string;
 }) {
   return (
     <aside className="hidden lg:block">
@@ -40,6 +44,8 @@ export function DesktopCart({
           setDelivery={setDelivery}
           onOrderAccepted={onOrderAccepted}
           accepted={accepted}
+          workFrom={workFrom}
+          workTo={workTo}
         />
       </div>
     </aside>
@@ -52,11 +58,15 @@ export function MobileCart({
   delivery,
   setDelivery,
   onOrderAccepted,
+  workFrom,
+  workTo,
 }: {
   cart: Cart;
   delivery: Delivery;
   setDelivery: (d: Delivery) => void;
   onOrderAccepted: (o: OrderAccepted) => void;
+  workFrom?: string;
+  workTo?: string;
 }) {
   const [open, setOpen] = useState(false);
   if (cart.count === 0) return null;
@@ -105,6 +115,8 @@ export function MobileCart({
                 setOpen(false);
                 onOrderAccepted(o);
               }}
+              workFrom={workFrom}
+              workTo={workTo}
             />
           </div>
         </div>

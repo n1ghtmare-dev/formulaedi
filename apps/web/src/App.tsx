@@ -154,6 +154,8 @@ export function App() {
           setDelivery={setDelivery}
           onOrderAccepted={onOrderAccepted}
           accepted={accepted}
+          workFrom={settings.work_hours_from}
+          workTo={settings.work_hours_to}
         />
       </main>
 
@@ -167,6 +169,8 @@ export function App() {
         delivery={delivery}
         setDelivery={setDelivery}
         onOrderAccepted={onOrderAccepted}
+        workFrom={settings.work_hours_from}
+        workTo={settings.work_hours_to}
       />
 
       {accepted && <OrderAcceptedModal order={accepted} onClose={() => setAccepted(null)} />}
