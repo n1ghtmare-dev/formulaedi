@@ -20,12 +20,22 @@ export interface InvoiceParams {
 @Injectable()
 export class PaykeeperService {
   private readonly logger = new Logger(PaykeeperService.name);
-  private readonly server = (process.env.PAYKEEPER_SERVER ?? '').replace(/\/$/, '');
-  private readonly user = process.env.PAYKEEPER_USER ?? '';
-  private readonly password = process.env.PAYKEEPER_PASSWORD ?? '';
-  private readonly secret = process.env.PAYKEEPER_SECRET ?? '';
-
   private tokenCache: { token: string; at: number } | null = null;
+
+  // Читаем env ЛЕНИВО (геттеры): @nestjs/config наполняет process.env из .env при старте,
+  // а инициализаторы полей выполнились бы раньше загрузки и остались бы пустыми.
+  private get server(): string {
+    return (process.env.PAYKEEPER_SERVER ?? '').replace(/\/$/, '');
+  }
+  private get user(): string {
+    return process.env.PAYKEEPER_USER ?? '';
+  }
+  private get password(): string {
+    return process.env.PAYKEEPER_PASSWORD ?? '';
+  }
+  private get secret(): string {
+    return process.env.PAYKEEPER_SECRET ?? '';
+  }
 
   isConfigured(): boolean {
     return !!(this.server && this.user && this.password && this.secret);
