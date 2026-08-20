@@ -85,12 +85,21 @@ jobs:
             'echo "связь есть: $(whoami)@$(hostname)"'
 
       - name: Выкатка (${{ env.MODE }})
+        env:
+          # Секреты PayKeeper из GitHub Actions. remote-deploy впишет их в .env на сервере.
+          PK_SERVER: ${{ secrets.PAYKEEPER_SERVER }}
+          PK_USER: ${{ secrets.PAYKEEPER_USER }}
+          PK_PASSWORD: ${{ secrets.PAYKEEPER_PASSWORD }}
+          PK_SECRET: ${{ secrets.PAYKEEPER_SECRET }}
         run: |
+          # Блок KEY=VALUE строк → base64 (безопасно для кавычек/спецсимволов в пароле и секрете).
+          PK_ENV_B64=$(printf 'PAYKEEPER_SERVER=%s\nPAYKEEPER_USER=%s\nPAYKEEPER_PASSWORD=%s\nPAYKEEPER_SECRET=%s\n' \
+            "$PK_SERVER" "$PK_USER" "$PK_PASSWORD" "$PK_SECRET" | base64 -w0)
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes \
             -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
             -p "${{ secrets.PROD_SSH_PORT }}" \
             "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
-            "bash -s -- '${{ secrets.PROD_DEPLOY_PATH }}' '$MODE' 'origin/$TARGET_REF'" \
+            "PK_ENV_B64='$PK_ENV_B64' bash -s -- '${{ secrets.PROD_DEPLOY_PATH }}' '$MODE' 'origin/$TARGET_REF'" \
             < deploy/remote-deploy.sh
 
       # По домену и по HTTPS — ровно так, как сайт видит живой пользователь:

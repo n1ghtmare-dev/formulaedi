@@ -176,6 +176,26 @@ if [ -f .env ]; then
   npm run db:seed -w apps/api 2>&1 | tail -4 || echo "(seed пропущен — нормально, если данные уже есть)"
 fi
 
+# ─────────────────── СЕКРЕТЫ PAYKEEPER → .env ───────────────────
+# Приходят из GitHub Actions в переменной PK_ENV_B64 (base64 блока KEY=VALUE строк).
+# Апсертим только непустые значения, остальной .env не трогаем. Читаются приложением
+# при старте (ConfigModule), поэтому пишем ДО pm2 reload.
+if [ -n "${PK_ENV_B64:-}" ] && [ -f .env ]; then
+  say "СЕКРЕТЫ PAYKEEPER → .env"
+  printf '%s' "$PK_ENV_B64" | base64 -d | while IFS= read -r line; do
+    key="${line%%=*}"
+    val="${line#*=}"
+    [ -z "$key" ] && continue
+    if [ -z "$val" ]; then
+      echo "  $key: пусто в secrets — пропуск"
+      continue
+    fi
+    grep -v "^${key}=" .env > .env.tmp 2>/dev/null && mv .env.tmp .env
+    printf '%s\n' "$line" >> .env
+    echo "  $key: записан"
+  done
+fi
+
 # ─────────────────────────── ЗАПУСК ───────────────────────────
 say "ЗАПУСК API"
 if command -v pm2 >/dev/null; then
