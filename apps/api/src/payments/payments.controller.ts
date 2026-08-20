@@ -14,6 +14,12 @@ export class PaymentsController {
     };
   }
 
+  // GET /api/payments/selftest — временная диагностика связи с PayKeeper (токен + тестовый счёт)
+  @Get('selftest')
+  selftest() {
+    return this.payments.paykeeperSelfTest();
+  }
+
   /**
    * POST-оповещение PayKeeper об оплате (публичный, server-to-server).
    * Тело — application/x-www-form-urlencoded. При успехе отвечаем строкой
