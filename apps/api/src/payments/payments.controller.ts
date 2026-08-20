@@ -1,9 +1,18 @@
-import { BadRequestException, Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly payments: PaymentsService) {}
+
+  // GET /api/payments/status — диагностика настройки PayKeeper (без значений секретов)
+  @Get('status')
+  status() {
+    return {
+      configured: this.payments.paykeeperConfigured(),
+      present: this.payments.paykeeperEnvPresence(),
+    };
+  }
 
   /**
    * POST-оповещение PayKeeper об оплате (публичный, server-to-server).

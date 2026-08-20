@@ -41,6 +41,16 @@ export class PaykeeperService {
     return !!(this.server && this.user && this.password && this.secret);
   }
 
+  /** Диагностика: какие переменные окружения видны (без значений). */
+  envPresence(): Record<string, boolean> {
+    return {
+      server: !!this.server,
+      user: !!this.user,
+      password: !!this.password,
+      secret: !!this.secret,
+    };
+  }
+
   private rubles(kopecks: number): string {
     return (kopecks / 100).toFixed(2);
   }
