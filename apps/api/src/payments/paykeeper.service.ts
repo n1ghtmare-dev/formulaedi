@@ -84,14 +84,17 @@ export class PaykeeperService {
     return (kopecks / 100).toFixed(2);
   }
 
+  private authHeader(): string {
+    return `Basic ${Buffer.from(`${this.user}:${this.password}`).toString('base64')}`;
+  }
+
   /** Токен безопасности PayKeeper (обновляется раз в сутки — кэшируем на 12ч). */
   private async getToken(): Promise<string> {
     const fresh = this.tokenCache && Date.now() - this.tokenCache.at < 12 * 60 * 60 * 1000;
     if (fresh) return this.tokenCache!.token;
 
-    const auth = Buffer.from(`${this.user}:${this.password}`).toString('base64');
     const res = await fetch(`${this.server}/info/settings/token/`, {
-      headers: { Authorization: `Basic ${auth}` },
+      headers: { Authorization: this.authHeader() },
     });
     if (!res.ok) throw new Error(`PayKeeper token: HTTP ${res.status}`);
     const data = (await res.json()) as { token?: string };
@@ -121,11 +124,20 @@ export class PaykeeperService {
 
     const res = await fetch(`${this.server}/change/invoice/preview/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: this.authHeader(),
+      },
       body: body.toString(),
     });
     if (!res.ok) throw new Error(`PayKeeper invoice: HTTP ${res.status}`);
-    const data = (await res.json()) as { invoice_id?: string; invoice_url?: string };
+    const text = await res.text();
+    let data: { invoice_id?: string; invoice_url?: string };
+    try {
+      data = JSON.parse(text) as { invoice_id?: string; invoice_url?: string };
+    } catch {
+      throw new Error(`PayKeeper invoice: не JSON (${text.slice(0, 120)})`);
+    }
     if (!data.invoice_id || !data.invoice_url) {
       throw new Error('PayKeeper invoice: нет invoice_id/invoice_url');
     }
